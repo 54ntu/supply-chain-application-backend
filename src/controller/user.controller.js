@@ -316,10 +316,37 @@ class UserController {
   }
 
   static async restPassword(req, res) {
-    const { email, password, confirmPassword } = req.body;
-    if (!email || !passowrd || !confirmPassword) {
-      return res.status(400).json({
-        error: "all fields are required..!!",
+    try {
+      const { email, password, confirmPassword } = req.body;
+      if (!email || !passowrd || !confirmPassword) {
+        return res.status(400).json({
+          error: "all fields are required..!!",
+        });
+      }
+
+      if (password != confirmPassword) {
+        return res.status(400).json({
+          error: "password and confirmpassword doesnot matched...!!",
+        });
+      }
+
+      //check whether the email exist or not
+      const isUserExist = await User.findOne({ email: email });
+      if (!isUserExist) {
+        return res.status(404).json({
+          error: "email doesnot exist",
+        });
+      }
+
+      const hashedpassword = await hashPassword(password);
+      isUserExist.password = hashedpassword;
+      await isUserExist.save();
+      return res
+        .status(200)
+        .json(new ApiResponse(200, "password reset successfully"));
+    } catch (error) {
+      return res.status(500).json({
+        error: "error while reseting password",
       });
     }
   }
