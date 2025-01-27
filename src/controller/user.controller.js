@@ -107,26 +107,26 @@ class UserController {
       .json(
         new ApiResponse(
           201,
-          isdistributorCreated._id,
+          isdistributorCreated.email,
           "distributor created successfully😊😊😊😊😊"
         )
       );
   }
 
   static async verifyOtp(req, res) {
-    const { distributorid, otp } = req.body;
+    const { email, otp } = req.body;
 
-    if (!distributorid || !otp) {
+    if (!email || !otp) {
       return res.status(400).json({
-        message: "distributor id and otp are required..😒😒😒😒😒",
+        message: "email and otp are required..😒😒😒😒😒",
       });
     }
 
     //check the distributor by using its id
-    const distributor = await User.findById({ _id: distributorid });
+    const distributor = await User.findOne({ email: email });
     if (!distributor) {
       return res.status(404).json({
-        message: "distributor with the given id is not found...😒😒😒😒",
+        message: "distributor with the given email is not found...😒😒😒😒",
       });
     }
 
@@ -215,6 +215,113 @@ class UserController {
     return res.status(200).cookie("accessToken", accessToken, options).json({
       message: "user logged in successfully",
     });
+  }
+
+  static async handleForgotPassword(req, res) {
+    try {
+      const { email } = req.body;
+
+      //check whether the email is provided or not
+      if (!email) {
+        return res.status(400).json({
+          message: "email is required",
+        });
+      }
+
+      //check email is valid or not
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Invalid email format." });
+      }
+
+      //check whether the user with the given email is available or not
+      const isUserExist = await User.findOne({ email: email }).select(
+        " -password"
+      );
+
+      if (!isUserExist) {
+        return res.status(404).json({
+          message: "user with given email doesnot exist.😒😒😒😒😒",
+        });
+      }
+
+      //if user exist
+      //generate otp
+      const otp = generateOtp();
+      await sendmail({
+        to: email,
+        subject: "reset password",
+        text: `your otp is ${otp} `,
+      });
+
+      isUserExist.otp = otp;
+      await isUserExist.save();
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            isUserExist.email,
+            "reset pin is sent to your email..."
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        error: "error occurred ...!!",
+      });
+    }
+  }
+
+  static async verifyResetLink(req, res) {
+    try {
+      const { email, otp } = req.body;
+      if (!email || !otp) {
+        return res.status(400).json({
+          message: "please provide email and otp...!!",
+        });
+      }
+
+      const isEmailExist = await User.findOne({ email: email });
+      if (!isEmailExist) {
+        return res.status(404).json({
+          error: "email doesnot exist",
+        });
+      }
+
+      //check the otp whether it is valid or not
+
+      if (isEmailExist.otp != otp) {
+        return res.status(400).json({
+          error: "otp doesnot matched...!",
+        });
+      }
+
+      isEmailExist.otp = null;
+      await isEmailExist.save();
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            isEmailExist.email,
+            "otp verified successfully.!"
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        error: "something went wrong",
+      });
+    }
+  }
+
+  static async restPassword(req, res) {
+    const { email, password, confirmPassword } = req.body;
+    if (!email || !passowrd || !confirmPassword) {
+      return res.status(400).json({
+        error: "all fields are required..!!",
+      });
+    }
   }
 }
 
