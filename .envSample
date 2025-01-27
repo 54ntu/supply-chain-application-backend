@@ -1,2 +1,13 @@
-PORT=3424
-MONGODB_URL=""
+PORT = 3424;
+MONGODB_URL = "";
+
+//for nodemailer
+EMAIL = "";
+EMAIL_PASSWORD = "";
+
+//jwt secret key and expiry time
+ACCESS_TOKEN_SECRET = "";
+ACCESS_TOKEN_EXPIRY = "";
+
+//node environment
+NODE_ENV = "development";
