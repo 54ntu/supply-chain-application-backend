@@ -155,6 +155,7 @@ class UserController {
   }
 
   static async login(req, res) {
+    console.log("login controller hit vayo hoiii");
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({
@@ -167,6 +168,14 @@ class UserController {
     if (!isUserExist) {
       return res.status(404).json({
         message: "user doesnot exist",
+      });
+    }
+
+    //check whether the user is verified or not
+    //as we are verifying user with otp
+    if (isUserExist.isverified == false) {
+      return res.status(403).json({
+        message: "please verified your account first",
       });
     }
 
@@ -208,7 +217,6 @@ class UserController {
     });
   }
 }
-
 
 module.exports = {
   UserController,

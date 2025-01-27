@@ -32,6 +32,7 @@ class UserMiddleware {
   }
 
   static async isDistributor(req, res, next) {
+    // console.log(`in distributor ${req.user.role}`);
     if (!req.user) {
       return res.status(400).json({
         error: "user role is required..!!",
