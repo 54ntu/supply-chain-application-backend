@@ -11,6 +11,14 @@ salesPersonRouter
     SalesPerson.addSalesperson
   );
 
+salesPersonRouter
+  .route("/get")
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    SalesPerson.getSalespersons
+  );
+
 module.exports = {
   salesPersonRouter,
 };

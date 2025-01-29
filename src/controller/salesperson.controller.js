@@ -1,6 +1,7 @@
 const { User } = require("../models/user.models");
 const { hashPassword } = require("../services/authController");
 const { ApiResponse } = require("../services/ApiResponse");
+const { default: mongoose } = require("mongoose");
 
 class SalesPerson {
   static async addSalesperson(req, res) {
@@ -80,6 +81,86 @@ class SalesPerson {
           "salesperson added successfully"
         )
       );
+  }
+
+  static async getSalespersons(req, res) {
+    //get the distributor id   from the middleware because only distributor can see the salesperson details
+    //get all the saleperson details associated with the distributor
+    //if available then send the response
+    //if not then return the error message
+
+    const distributorid = req.user?._id;
+    console.log(distributorid);
+    if (!distributorid) {
+      return res.status(401).json({
+        message: "distributor id is not available",
+      });
+    }
+
+    try {
+      const salespersons = await User.aggregate([
+        {
+          $match: {
+            distributorId: new mongoose.Types.ObjectId(distributorid),
+          },
+        },
+
+        {
+          $lookup: {
+            from: "users",
+            localField: "distributorId",
+            foreignField: "_id",
+            as: "distributor",
+          },
+        },
+
+        {
+          $unwind: "$distributor",
+        },
+
+        {
+          $project: {
+            _id: 1,
+            firstname: 1,
+            lastname: 1,
+            phone: 1,
+            email: 1,
+            role: 1,
+            distributorName: {
+              $concat: ["$distributor.firstname", " ", "$distributor.lastname"],
+            },
+          },
+        },
+      ]);
+
+      if (salespersons.length === 0) {
+        return res.status(404).json({
+          message: "no salespersons available.!!!",
+        });
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            salespersons,
+            "salespersons detaile fetched successfully"
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        message: "error fetching salespersons",
+      });
+    }
+  }
+
+  static async deleteSalespersons(req, res) {
+    //get the user role from the middleware first
+    //get the salespersons id from the req.params
+    //check whether user role is distributor or not
+    //check whether the id provided is belongs to the salespersons
+    //if everything is ok then delete the salespersons
   }
 }
 
