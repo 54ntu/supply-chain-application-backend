@@ -19,6 +19,14 @@ salesPersonRouter
     SalesPerson.getSalespersons
   );
 
+salesPersonRouter
+  .route("/delete/:id")
+  .delete(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    SalesPerson.deleteSalespersons
+  );
+
 module.exports = {
   salesPersonRouter,
 };

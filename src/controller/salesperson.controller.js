@@ -1,7 +1,7 @@
 const { User } = require("../models/user.models");
 const { hashPassword } = require("../services/authController");
 const { ApiResponse } = require("../services/ApiResponse");
-const { default: mongoose } = require("mongoose");
+const { default: mongoose, isValidObjectId } = require("mongoose");
 
 class SalesPerson {
   static async addSalesperson(req, res) {
@@ -156,11 +156,53 @@ class SalesPerson {
   }
 
   static async deleteSalespersons(req, res) {
-    //get the user role from the middleware first
+    //get the distributor id  from the middleware first
     //get the salespersons id from the req.params
-    //check whether user role is distributor or not
-    //check whether the id provided is belongs to the salespersons
+    //check and delete the data using query
     //if everything is ok then delete the salespersons
+
+    try {
+      const distributorid = req.user?._id;
+      console.log(distributorid);
+      if (!distributorid) {
+        return res.status(401).json({
+          message: "distributor id is required",
+        });
+      }
+
+      const salespersonid = req.params.id;
+      // console.log(`salespersonid is : ${salespersonid}`);
+      if (!isValidObjectId(salespersonid)) {
+        return res.status(400).json({
+          message: "invalid salesperson id ",
+        });
+      }
+
+      //find the salesperson first
+      const salesperson = await User.findById(salespersonid);
+      if (!salesperson) {
+        return res.status(404).json({
+          message: "salesperson not found",
+        });
+      }
+
+      //make sure that the distributor is the owner of that salesperson account
+      if (salesperson.distributorId.toString() !== distributorid) {
+        return res.status(401).json({
+          message: "you are not authorized to delete this salesperson",
+        });
+      }
+
+      //delete the salesperson
+      await User.findByIdAndDelete(salespersonid);
+      return res.status(200).json({
+        message: "salesperosn deleted successfully...",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        error: "error deleting salesperson",
+      });
+    }
   }
 }
 
