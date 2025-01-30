@@ -11,5 +11,21 @@ productRouter
     UserMiddleware.isDistributor,
     upload.single("productimage"),
     ProductController.addProduct
+  )
+  .get(ProductController.viewAllProduct);
+
+productRouter
+  .route("/:id")
+  .get(ProductController.viewProductById)
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    ProductController.updateProduct
+  )
+  .delete(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    ProductController.deleteProduct
   );
+
 module.exports = productRouter;

@@ -29,7 +29,7 @@ const variantSchema = new mongoose.Schema(
       default: 10,
     },
   },
-  { timestatmps: true }
+  { timestamps: true }
 );
 
 const Variant = mongoose.model("Variant", variantSchema);

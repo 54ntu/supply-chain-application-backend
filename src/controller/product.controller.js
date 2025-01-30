@@ -284,6 +284,98 @@ class ProductController {
       });
     }
   }
+
+
+  static async updateProduct(req, res) {
+    //get the product id from the req.params
+    //get the distributor id from the req.user
+    //validate both data
+    //find the product by id and distributor id
+    //update the product data
+    //return response
+
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res
+          .status(400)
+          .json({ message: "please provide valid product id" });
+      }
+
+      const distributorId = req.user._id;
+      if (!distributorId) {
+        return res.status(400).json({ message: "Distributor id is required" });
+      }
+
+      const product = await Product.findOne({
+        _id: id,
+        distributorId,
+      });
+
+      if (!product) {
+        return res.status(404).json({ message: "product not found" });
+      }
+
+      //get the product image from the req.file
+      const productImage = req.file?.filename;
+
+      //get the data from the req.body
+      const {
+        category,
+        product_name,
+        product_description,
+        product_weight,
+        product_price,
+        length,
+        breadth,
+        width,
+        restock_threshold,
+        variants, //variants will be the array of attributes of the product
+      } = req.body;
+
+      //validate all the required fields
+      if (
+        !category ||
+        !product_name ||
+        !product_description ||
+        !product_weight ||
+        !product_price ||
+        !length ||
+        !breadth ||
+        !width ||
+        !variants
+      ) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      //update the product data
+      product.category = category;
+      product.product_name = product_name;
+      product.product_description = product_description;
+      product.product_weight = product_weight;
+      product.product_price = product_price;
+      product.product_image = productImage;
+      product.length = length;
+      product.breadth = breadth;
+      product.width = width;
+      product.restock_threshold = restock_threshold;
+
+      await product.save();
+
+
+      //handle variants updation as well
+      
+
+      return res.status(200).json({
+        message: "product updated successfully",
+        product,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "error updating product",
+      });
+    } 
+  }
 }
 
 module.exports = {
