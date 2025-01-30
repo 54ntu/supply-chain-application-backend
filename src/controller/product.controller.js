@@ -2,6 +2,8 @@ const { Product } = require("../models/product.models");
 const { generateFKU } = require("../services/generateFKU");
 const { generateSKU } = require("../services/generateSKU");
 const { Variant } = require("../models/variants.models");
+const { ApiResponse } = require("../services/ApiResponse");
+const { isValidObjectId } = require("mongoose");
 class ProductController {
   static async addProduct(req, res) {
     //get the distributor id from the req.user.id
@@ -150,6 +152,105 @@ class ProductController {
       });
     }
   }
+
+  static async viewAllProduct(req, res) {
+    //simply send the get request
+    //return the response
+
+    try {
+      const products = await Product.find();
+      if (products.length === 0) {
+        return res.status(404).json({ message: "products not found" });
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, products, "products data fetched successfully.")
+        );
+    } catch (error) {
+      return res.status(500).json({
+        message: "error fetching products data",
+      });
+    }
+  }
+
+  static async viewProductById(req, res) {
+    //get the product id from the req.params
+    //valida the product id
+    //find product by id
+    //return response
+
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({
+          message: "please provide valid product id",
+        });
+      }
+
+      const product = await Product.aggregate([
+        {
+          $match: {
+            _id: id,
+          },
+        },
+        {
+          $lookup: {
+            from: "variants",
+            localField: "_id",
+            foreignField: "product_id",
+            as: "variants",
+          },
+        },
+        {
+          $unwind: "$variants",
+        },
+        {
+          $project: {
+            _id: 1,
+            distributorId: 1,
+            category: 1,
+            product_name: 1,
+            product_description: 1,
+            product_weight: 1,
+            product_price: 1,
+            product_image: 1,
+            length: 1,
+            breadth: 1,
+            width: 1,
+            restock_threshold: 1,
+            total_stock: 1,
+            "variants._id": 1,
+            "variants.SKU": 1,
+            "variants.attributes": 1,
+            "variants.variant_price": 1,
+            "variants.stock": 1,
+          },
+        },
+      ]);
+
+      if (!product) {
+        return res.status(404).json({ message: "product not found" });
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            productm,
+            "product data fetched successfully..!!!!"
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        message: "error fetching product data",
+      });
+    }
+  }
+
+  
 }
 
 module.exports = {
