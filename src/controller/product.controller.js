@@ -250,7 +250,40 @@ class ProductController {
     }
   }
 
-  
+  static async deleteProduct(req, res) {
+    //get the product id from the req.params
+    //get the distributor id from the req.user
+    //validate both data
+    //find the product by id and distributor id and perform delete operation
+    //return response
+
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res
+          .status(400)
+          .json({ message: "please provide valid product id" });
+      }
+
+      const distributorId = req.user._id;
+      if (!distributorId) {
+        return res.status(400).json({ message: "Distributor id is required" });
+      }
+
+      await Product.findOneAndDelete({
+        _id: id,
+        distributorId,
+      });
+
+      return res.status(200).json({
+        message: "product deleted successfully..!!",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "error deleting product",
+      });
+    }
+  }
 }
 
 module.exports = {
