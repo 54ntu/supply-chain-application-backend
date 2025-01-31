@@ -1,5 +1,7 @@
+const { isValidObjectId } = require("mongoose");
 const { Customer } = require("../models/customer.models");
 const { ApiResponse } = require("../services/ApiResponse");
+const { default: mongoose } = require("mongoose");
 
 class CustomerController {
   static async addCustomer(req, res) {
@@ -132,6 +134,95 @@ class CustomerController {
             200,
             customers,
             "customers data fetched successfully.😊😊😊😊"
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        error: "something went wrong",
+      });
+    }
+  }
+
+  static async getCustomerById(req, res) {
+    //get the distributor id from the req.user
+    //get the customer id from the req.params
+    //validate both
+    //find customer comparing both distributor id and customer id
+    //if not then just give the error message
+    //if found send the success message with data
+
+    try {
+      const distributorid = req.user._id;
+      if (!distributorid) {
+        return res.status(400).json({
+          error: "distributor id is required.!",
+        });
+      }
+
+      // get the customer id from the req.params
+      const { id } = req.params;
+
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({
+          error: "invalid customer id please provide valid customer id",
+        });
+      }
+
+      //fetch the customer data matched with the distributor id and customer id
+      const customer = await Customer.aggregate([
+        {
+          $match: {
+            distributorId: new mongoose.Types.ObjectId(distributorid),
+            _id: new mongoose.Types.ObjectId(id),
+          },
+        },
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salespersonId",
+            foreignField: "_id",
+            as: "salespersondetails",
+          },
+        },
+
+        {
+          $unwind: "$salespersondetails",
+        },
+        {
+          $project: {
+            customerName: 1,
+            storeName: 1,
+            phone: 1,
+            email: 1,
+            address: 1,
+            preferredShippingMethod: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            salespersonName: {
+              $concat: [
+                "$salespersondetails.firstname",
+                " ",
+                "$salespersondetails.lastname",
+              ],
+            },
+          },
+        },
+      ]);
+
+      //check if find or not
+      if (!customer) {
+        return res.status(404).json({
+          error: "customer data not found for the following distributor",
+        });
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            customer,
+            `customer data for id  ${id} fetched successfully`
           )
         );
     } catch (error) {

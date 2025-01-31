@@ -18,6 +18,14 @@ customerRouter
     CustomerController.getCustomer
   );
 
+customerRouter
+  .route("/:id")
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    CustomerController.getCustomerById
+  );
+
 module.exports = {
   customerRouter,
 };
