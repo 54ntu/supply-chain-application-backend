@@ -28,7 +28,7 @@ class SalesPersonController {
       take_orders,
       collect_payments,
       track_shipment,
-      view_inteventory,
+      view_inventory,
     } = req.body;
     if (
       !firstname ||
@@ -119,32 +119,37 @@ class SalesPersonController {
     //if not then return the error message
 
     const distributorid = req.user?._id;
-    console.log(distributorid);
+    console.log(typeof distributorid);
     if (!distributorid) {
       return res.status(401).json({
         message: "distributor id is not available",
       });
     }
 
+    // const salespersondata = await SalesPerson.findOne({
+    //   distributor: distributorid,
+    // });
+
+    // console.log(salespersondata);
     try {
-      const salespersons = await User.aggregate([
+      const salespersons = await SalesPerson.aggregate([
         {
           $match: {
-            distributorId: new mongoose.Types.ObjectId(distributorid),
+            distributor: new mongoose.Types.ObjectId(distributorid),
           },
         },
 
         {
           $lookup: {
             from: "users",
-            localField: "distributorId",
+            localField: "distributor",
             foreignField: "_id",
-            as: "distributor",
+            as: "distributorDetails",
           },
         },
 
         {
-          $unwind: "$distributor",
+          $unwind: "$distributorDetails",
         },
 
         {
@@ -156,8 +161,13 @@ class SalesPersonController {
             email: 1,
             role: 1,
             distributorName: {
-              $concat: ["$distributor.firstname", " ", "$distributor.lastname"],
+              $concat: [
+                "$distributorDetails.firstname",
+                " ",
+                "$distributorDetails.lastname",
+              ],
             },
+            distributorEmail: "$distributorDetails.email",
           },
         },
       ]);
@@ -180,6 +190,43 @@ class SalesPersonController {
     } catch (error) {
       return res.status(500).json({
         message: "error fetching salespersons",
+      });
+    }
+  }
+
+  static async getSalesPersonByid(req, res) {
+    //get the salesperson id from the req.params
+    //validate distributor id and salesperson id
+    //find the salesperson id using salesperson id
+    //fetch all the data
+    //if found return the response
+
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({
+          message: "invalid salesperson id",
+        });
+      }
+      const isSalesPersonExist = await SalesPerson.findById(id);
+      // console.log(isSalesPersonExist);
+      if (!isSalesPersonExist) {
+        return res.status(404).json({
+          message: "salesperson with the given id is not found",
+        });
+      }
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            isSalesPersonExist,
+            "salesperson detail info fetched successfully.!"
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        message: "something went wrong..!",
       });
     }
   }
@@ -208,7 +255,7 @@ class SalesPersonController {
       }
 
       //find the salesperson first
-      const salesperson = await User.findById(salespersonid);
+      const salesperson = await SalesPerson.findById(salespersonid);
       if (!salesperson) {
         return res.status(404).json({
           message: "salesperson not found",
@@ -216,14 +263,14 @@ class SalesPersonController {
       }
 
       //make sure that the distributor is the owner of that salesperson account
-      if (salesperson.distributorId.toString() !== distributorid) {
+      if (salesperson.distributor.toString() !== distributorid) {
         return res.status(401).json({
           message: "you are not authorized to delete this salesperson",
         });
       }
 
       //delete the salesperson
-      await User.findByIdAndDelete(salespersonid);
+      await SalesPerson.findByIdAndDelete(salespersonid);
       return res.status(200).json({
         message: "salesperosn deleted successfully...",
       });
@@ -236,5 +283,5 @@ class SalesPersonController {
 }
 
 module.exports = {
-  SalesPerson,
+  SalesPersonController,
 };

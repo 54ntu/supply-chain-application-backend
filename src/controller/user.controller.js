@@ -172,9 +172,16 @@ class UserController {
       user = await SalesPerson.findOne({ email: email });
     }
 
+    //check whether the distributor or salesperson with the given email is available or not
+    if (!user) {
+      return res.status(404).json({
+        message: "user with the given email doesnot exist..!!",
+      });
+    }
+
     //check whether the user is verified or not
     //as we are verifying user with otp
-    if (user.isverified == false) {
+    if (!user.isverified) {
       return res.status(403).json({
         message: "please verified your account first",
       });

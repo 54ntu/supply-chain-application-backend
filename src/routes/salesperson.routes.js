@@ -1,6 +1,8 @@
 const express = require("express");
 const { UserMiddleware } = require("../middleware/auth.middleware");
-const { SalesPerson } = require("../controller/salesperson.controller");
+const {
+  SalesPersonController,
+} = require("../controller/salesperson.controller");
 const salesPersonRouter = express.Router();
 
 salesPersonRouter
@@ -8,7 +10,7 @@ salesPersonRouter
   .post(
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
-    SalesPerson.addSalesperson
+    SalesPersonController.addSalesperson
   );
 
 salesPersonRouter
@@ -16,7 +18,7 @@ salesPersonRouter
   .get(
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
-    SalesPerson.getSalespersons
+    SalesPersonController.getSalespersons
   );
 
 salesPersonRouter
@@ -24,7 +26,15 @@ salesPersonRouter
   .delete(
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
-    SalesPerson.deleteSalespersons
+    SalesPersonController.deleteSalespersons
+  );
+
+salesPersonRouter
+  .route("/get/:id")
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    SalesPersonController.getSalesPersonByid
   );
 
 module.exports = {
