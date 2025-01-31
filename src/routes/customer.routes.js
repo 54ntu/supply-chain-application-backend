@@ -8,9 +8,14 @@ customerRouter
   .route("/")
   .post(
     UserMiddleware.isUserLoggedIn,
-    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
     upload.single("customerImage"),
     CustomerController.addCustomer
+  )
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    CustomerController.getCustomer
   );
 
 module.exports = {

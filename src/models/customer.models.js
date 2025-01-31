@@ -34,6 +34,10 @@ const customerSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    address: {
+      type: String,
+      required: true,
+    },
     distributorId: {
       type: mongoose.Types.ObjectId,
       ref: "User",
