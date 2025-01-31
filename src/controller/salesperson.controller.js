@@ -3,6 +3,7 @@ const { hashPassword } = require("../services/authController");
 const { ApiResponse } = require("../services/ApiResponse");
 const { default: mongoose, isValidObjectId } = require("mongoose");
 const { SalesPerson } = require("../models/salesPerson.models");
+const { Notification } = require("../models/notification.models");
 
 class SalesPersonController {
   static async addSalesperson(req, res) {
@@ -100,6 +101,12 @@ class SalesPersonController {
         message: "error addding salesperson",
       });
     }
+
+    //create initial notification settings for the salesperson
+    await Notification.create({
+      userId: isSalespersonCreated._id,
+      userType: isSalespersonCreated.role,
+    });
 
     return res
       .status(201)

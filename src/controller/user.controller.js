@@ -10,6 +10,7 @@ const { generateOtp } = require("../services/generateOtp");
 const { sendmail } = require("../services/sendMail");
 const { envConfig } = require("../config/config");
 const { SalesPerson } = require("../models/salesPerson.models");
+const { Notification } = require("../models/notification.models");
 
 class UserController {
   static async singupDistributor(req, res) {
@@ -102,6 +103,12 @@ class UserController {
         message: "distributor creation failed",
       });
     }
+
+    //create initial notification for the distributor
+    await Notification.create({
+      userId: isdistributorCreated._id,
+      userType: isdistributorCreated.role,
+    });
 
     return res
       .status(201)
