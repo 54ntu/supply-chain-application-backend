@@ -6,6 +6,14 @@ const settingRouter = express.Router();
 settingRouter
   .route("/change-password")
   .post(UserMiddleware.isUserLoggedIn, SettingsController.changePassword);
+
+settingRouter
+  .route("/updateprofile")
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    SettingsController.updateProfile
+  );
 module.exports = {
   settingRouter,
 };

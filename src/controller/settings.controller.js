@@ -1,5 +1,6 @@
 const { SalesPerson } = require("../models/salesPerson.models");
 const { User } = require("../models/user.models");
+const { ApiResponse } = require("../services/ApiResponse");
 const {
   comparedPassword,
   hashPassword,
@@ -84,6 +85,65 @@ class SettingsController {
         error: "something went wrong",
       });
     }
+  }
+
+  static async updateProfile(req, res) {
+    console.log("update profile");
+    const id = req.user._id;
+    if (!id) {
+      return res.status(400).json({
+        error: "invalid id or id is not provided",
+      });
+    }
+
+    const { firstname, lastname, businessName, address, email, phone } =
+      req.body;
+
+    console.log(req.body);
+    if (
+      !firstname ||
+      !lastname ||
+      !businessName ||
+      !address ||
+      !email ||
+      !phone
+    ) {
+      return res.status(400).json({
+        error: "all fields are required",
+      });
+    }
+
+    //find the distributor using id
+    const updatedDistributor = await User.findByIdAndUpdate(
+      id,
+      {
+        firstname,
+        lastname,
+        companyName: businessName,
+        location: address,
+        email,
+        phone,
+      },
+      {
+        new: true,
+      }
+    );
+
+    // console.log(updatedDistributor);
+    if (!updatedDistributor) {
+      return res.status(500).json({
+        message: "user profile updation failed.!",
+      });
+    }
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          updatedDistributor,
+          "distributor profile updated successfully"
+        )
+      );
   }
 }
 
