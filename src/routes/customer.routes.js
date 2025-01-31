@@ -24,6 +24,11 @@ customerRouter
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
     CustomerController.getCustomerById
+  )
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    CustomerController.updateCustomer
   );
 
 module.exports = {

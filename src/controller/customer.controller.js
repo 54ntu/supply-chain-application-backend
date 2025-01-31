@@ -231,6 +231,73 @@ class CustomerController {
       });
     }
   }
+
+  static async updateCustomer(req, res) {
+    //get the distributor id from the req.user
+    //get the customer id from the req.params
+    //validate customer id and distributor id
+    //get the data from the req.body
+    //update the data
+    //if success send the success message
+    //if not return error message
+    const distributorid = req.user._id;
+    if (!distributorid) {
+      return res.status(400).json({
+        error: "distributor id is required.!",
+      });
+    }
+
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        error: "please provide customer id ",
+      });
+    }
+
+    const {
+      customerName,
+      customerId,
+      email,
+      phone,
+      storeName,
+      address,
+      preferredShippingMethod,
+      salespersonId,
+    } = req.body;
+
+    //find the customer using distributor id and customer id
+
+    const isCustomerExist = await Customer.findOne({
+      distributorId: distributorid,
+      _id: id,
+    });
+
+    if (!isCustomerExist) {
+      return res.status(404).json({
+        error: `customer with id ${id} created by distributor ${distributorid} not exist`,
+      });
+    }
+
+    isCustomerExist.customerName = customerName;
+    isCustomerExist.customerId = customerId;
+    isCustomerExist.email = email;
+    isCustomerExist.phone = phone;
+    isCustomerExist.storeName = storeName;
+    isCustomerExist.address = address;
+    isCustomerExist.preferredShippingMethod = preferredShippingMethod;
+    isCustomerExist.salespersonId = salespersonId;
+    await isCustomerExist.save();
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          isCustomerExist,
+          "customer data updated successfully"
+        )
+      );
+  }
 }
 
 module.exports = {

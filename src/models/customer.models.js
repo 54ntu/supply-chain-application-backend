@@ -5,25 +5,20 @@ const customerSchema = new mongoose.Schema(
   {
     customerName: {
       type: String,
-      required: true,
     },
 
     customerId: {
       type: String,
-      required: true,
     },
     email: {
       type: String,
-      required: true,
       unique: true,
     },
     phone: {
       type: String,
-      required: true,
     },
     storeName: {
       type: String,
-      required: true,
     },
     preferredShippingMethod: {
       type: String,
@@ -32,11 +27,9 @@ const customerSchema = new mongoose.Schema(
 
     customerpic: {
       type: String,
-      required: true,
     },
     address: {
       type: String,
-      required: true,
     },
     distributorId: {
       type: mongoose.Types.ObjectId,
