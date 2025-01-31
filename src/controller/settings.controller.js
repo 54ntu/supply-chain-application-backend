@@ -1,3 +1,5 @@
+const { default: mongoose } = require("mongoose");
+const { Notification } = require("../models/notification.models");
 const { SalesPerson } = require("../models/salesPerson.models");
 const { User } = require("../models/user.models");
 const { ApiResponse } = require("../services/ApiResponse");
@@ -144,6 +146,60 @@ class SettingsController {
           "distributor profile updated successfully"
         )
       );
+  }
+
+  static async udateNotificationSettings(req, res) {
+    console.log("update notification settings");
+    //get the distributor id from req.user
+
+    try {
+      const userId = new mongoose.Types.ObjectId(req.user._id);
+      console.log(typeof userId);
+      if (!userId) {
+        return res.status(400).json({
+          error: "userId  is not valid",
+        });
+      }
+      const {
+        orderConfirmation,
+        orderDelayed,
+        orderDelivered,
+        emailNotifications,
+      } = req.body;
+
+      //update notification table by finding the distributor id from the notification table
+      const updatedNotificationSettings = await Notification.findByIdAndUpdate(
+        { userId: userId },
+        {
+          orderConfirmation,
+          orderDelayed,
+          orderDelivered,
+          emailNotifications,
+        },
+        {
+          new: true,
+        }
+      );
+
+      if (!updatedNotificationSettings) {
+        return res.status(500).json({
+          error: "notification settings updation failed ",
+        });
+      }
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            updatedNotificationSettings,
+            "notification settings updated successfully"
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        error: `something went wrong.! ${error}`,
+      });
+    }
   }
 }
 

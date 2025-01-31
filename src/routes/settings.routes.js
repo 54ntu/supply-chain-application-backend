@@ -5,7 +5,7 @@ const settingRouter = express.Router();
 
 settingRouter
   .route("/change-password")
-  .post(UserMiddleware.isUserLoggedIn, SettingsController.changePassword);
+  .patch(UserMiddleware.isUserLoggedIn, SettingsController.changePassword);
 
 settingRouter
   .route("/updateprofile")
@@ -13,6 +13,13 @@ settingRouter
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
     SettingsController.updateProfile
+  );
+settingRouter
+  .route("/notification-update")
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    SettingsController.udateNotificationSettings
   );
 module.exports = {
   settingRouter,
