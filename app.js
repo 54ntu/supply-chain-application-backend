@@ -4,6 +4,7 @@ const { distributorRouter } = require("./src/routes/distributor.routes");
 const { salesPersonRouter } = require("./src/routes/salesperson.routes");
 const { categoryRouter } = require("./src/routes/category.routes");
 const productRouter = require("./src/routes/product.routes");
+const { customerRouter } = require("./src/routes/customer.routes");
 const app = express();
 
 app.use(express.json());
@@ -21,6 +22,10 @@ app.use("/api/v1/category", categoryRouter);
 
 //route for product controller
 app.use("/api/v1/product", productRouter);
+
+
+//routes for customer controller
+app.use("/api/v1/customer",customerRouter)
 
 module.exports = {
   app,
