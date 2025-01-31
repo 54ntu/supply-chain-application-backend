@@ -9,6 +9,7 @@ const { UserRole } = require("../global");
 const { generateOtp } = require("../services/generateOtp");
 const { sendmail } = require("../services/sendMail");
 const { envConfig } = require("../config/config");
+const { SalesPerson } = require("../models/salesPerson.models");
 
 class UserController {
   static async singupDistributor(req, res) {
@@ -163,27 +164,24 @@ class UserController {
       });
     }
 
-    //if provided then check whether the email exists or not at first
-    const isUserExist = await User.findOne({ email: email });
-    if (!isUserExist) {
-      return res.status(404).json({
-        message: "user doesnot exist",
-      });
+    //if provided then first check in the distributor table
+    let user = await User.findOne({ email: email });
+
+    //if not found in distributor table(user for this application) then go for salesperson table
+    if (!user) {
+      user = await SalesPerson.findOne({ email: email });
     }
 
     //check whether the user is verified or not
     //as we are verifying user with otp
-    if (isUserExist.isverified == false) {
+    if (user.isverified == false) {
       return res.status(403).json({
         message: "please verified your account first",
       });
     }
 
     //if user exist then compare the password
-    const isPasswordMatched = await comparedPassword(
-      password,
-      isUserExist.password
-    );
+    const isPasswordMatched = await comparedPassword(password, user.password);
 
     if (!isPasswordMatched) {
       return res.status(400).json({
@@ -195,8 +193,8 @@ class UserController {
     //generate access token
     const accessToken = await jwt.sign(
       {
-        _id: isUserExist._id,
-        role: isUserExist.role,
+        _id: user._id,
+        role: user.role,
       },
 
       envConfig.accessTokenSecret,

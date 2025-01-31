@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: [UserRole.Distributor, UserRole.SalesPerson],
+      default: UserRole.Distributor,
     },
     otp: {
       type: String,
@@ -44,11 +44,6 @@ const userSchema = new mongoose.Schema(
     },
     verificationDoc: {
       type: String,
-    },
-    distributorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Reference to the Distributor who added the salesperson
-      default: null,
     },
   },
   { timestamps: true }

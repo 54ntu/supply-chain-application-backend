@@ -2,8 +2,9 @@ const { User } = require("../models/user.models");
 const { hashPassword } = require("../services/authController");
 const { ApiResponse } = require("../services/ApiResponse");
 const { default: mongoose, isValidObjectId } = require("mongoose");
+const { SalesPerson } = require("../models/salesPerson.models");
 
-class SalesPerson {
+class SalesPersonController {
   static async addSalesperson(req, res) {
     //get the distributor id from the middleware
     //get the required data from the req.body
@@ -15,8 +16,29 @@ class SalesPerson {
     const distributorid = req.user._id;
 
     // console.log(req.body);
-    const { firstname, lastname, phone, email, password, role } = req.body;
-    if (!firstname || !lastname || !phone || !email || !password || !role) {
+    const {
+      firstname,
+      lastname,
+      phone,
+      email,
+      password,
+      role,
+      address,
+      assign_region,
+      take_orders,
+      collect_payments,
+      track_shipment,
+      view_inteventory,
+    } = req.body;
+    if (
+      !firstname ||
+      !lastname ||
+      !phone ||
+      !email ||
+      !password ||
+      !address ||
+      !assign_region
+    ) {
       return res.status(400).json({
         message: "please provide all the required data",
       });
@@ -35,8 +57,8 @@ class SalesPerson {
     }
 
     //check whether the sales person already registered or not
-    const isUserexist = await User.findOne({ email: email });
-    if (isUserexist) {
+    const isSalesPersonExist = await SalesPerson.findOne({ email: email });
+    if (isSalesPersonExist) {
       return res.status(400).json({
         message: "salesperson with given email is already exist",
       });
@@ -50,21 +72,28 @@ class SalesPerson {
       });
     }
 
-    const salesPerson = await User.create({
+    const salesPerson = await SalesPerson.create({
       firstname,
       lastname,
       email,
       phone,
       password: hashedpassword,
       role,
+      address,
+      assign_region,
+      take_orders,
+      collect_payments,
+      track_shipment,
+      view_inventory,
       isverified: true,
-      distributorId: distributorid,
+
+      distributor: distributorid,
     });
 
     //check the salesperson created or not then remove the password as well
-    const isSalespersonCreated = await User.findById(salesPerson._id).select(
-      "-password"
-    );
+    const isSalespersonCreated = await SalesPerson.findById(
+      salesPerson._id
+    ).select("-password");
 
     if (!isSalespersonCreated) {
       return res.status(500).json({
