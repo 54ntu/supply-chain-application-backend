@@ -34,17 +34,25 @@ const productSchema = new mongoose.Schema(
     },
     product_image: {
       type: String,
-      required: true,
     },
     product_weight: {
       type: Number,
       required: true,
     },
-
     product_price: {
       type: Number,
-      required: true,
+      default: 0,
     },
+
+    min_price: {
+      type: Number,
+      default: 0,
+    },
+    max_price: {
+      type: Number,
+      default: 0,
+    },
+
     length: {
       type: Number,
       required: true,

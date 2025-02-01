@@ -22,6 +22,7 @@ class ProductController {
     //if sku not exist then just add the new variant
     //then update the total stock of the product in the inventory
     //return the response
+    console.log("add product hit vayo");
 
     try {
       const distributorid = req.user._id;
@@ -30,11 +31,11 @@ class ProductController {
       }
 
       const productImage = req.file?.filename;
-      if (!productImage) {
-        return res.status(400).json({
-          message: "product image is not found..!!",
-        });
-      }
+      // if (!productImage) {
+      //   return res.status(400).json({
+      //     message: "product image is not found..!!",
+      //   });
+      // }
 
       //get the data from the req.body
       const {
@@ -56,7 +57,6 @@ class ProductController {
         !product_name ||
         !product_description ||
         !product_weight ||
-        !product_price ||
         !length ||
         !breadth ||
         !width ||
@@ -66,7 +66,7 @@ class ProductController {
       }
 
       //check if the product already exist or not(same category, name)
-      const existingProduct = await Product.findOne({
+      let existingProduct = await Product.findOne({
         category,
         product_name: { $regex: new RegExp("^" + product_name + "$", "i") }, //case insensetive check
       });
@@ -87,11 +87,14 @@ class ProductController {
           product_weight,
           product_price,
           product_image: productImage,
+          FKU,
           length,
           breadth,
           width,
           restock_threshold,
           total_stock: 0, // total_stock will be updated after adding variants
+          min_price: 0, //will be calculated automatically once the variants added
+          max_price: 0, //will be calculated automatically once the variants added
         });
 
         await existingProduct.save();
@@ -134,6 +137,20 @@ class ProductController {
 
       //update the total stock of the product
       existingProduct.total_stock += totalStock;
+
+      //calculate min and max prices among all variants
+      if (variantArray.length > 0) {
+        const prices = variantArray.map((v) => v.variant_price);
+        const minPrice = Math.min(...prices);
+        const maxprice = Math.max(...prices);
+        existingProduct.min_price = minPrice;
+        existingProduct.max_price = maxprice;
+      } else {
+        //if no variants are added, then just show the base product price
+        existingProduct.min_price = product_price || 0;
+        existingProduct.max_price = product_price || 0;
+      }
+
       await existingProduct.save();
 
       return res.status(201).json({
@@ -285,7 +302,6 @@ class ProductController {
     }
   }
 
-
   static async updateProduct(req, res) {
     //get the product id from the req.params
     //get the distributor id from the req.user
@@ -362,9 +378,7 @@ class ProductController {
 
       await product.save();
 
-
       //handle variants updation as well
-      
 
       return res.status(200).json({
         message: "product updated successfully",
@@ -374,7 +388,7 @@ class ProductController {
       return res.status(500).json({
         message: "error updating product",
       });
-    } 
+    }
   }
 }
 

@@ -1,10 +1,6 @@
 const generateSKU = (fku, attributes) => {
-  const attributePart = attributes
-    ? attributes
-        .map((attr) => attr.value)
-        .join("-")
-        .toUpperCase()
-    : "";
+  let attributePart = Object.values(attributes).join("-").toUpperCase();
+
   return `${fku}-${attributePart}`;
 };
 
