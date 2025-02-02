@@ -1,25 +1,7 @@
 const mongoose = require("mongoose");
-const { UserRole } = require("../global/index");
 
 const notificationSchema = new mongoose.Schema(
   {
-    orderConfirmation: {
-      type: Boolean,
-      default: true,
-    },
-    orderDelayed: {
-      type: Boolean,
-      default: true,
-    },
-    orderDelivered: {
-      type: Boolean,
-      default: true,
-    },
-    emailNotifications: {
-      type: Boolean,
-      default: true,
-    },
-
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "userType",
@@ -30,11 +12,26 @@ const notificationSchema = new mongoose.Schema(
       enum: [UserRole.Distributor, UserRole.SalesPerson],
       required: true,
     },
+    title: {
+      type: String,
+      required: true,
+    },
+    message: {
+      type: String,
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: ["order_completed", "low_stock_alert", "restock_reminder"],
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["unread", "read"],
+      default: "unread",
+    },
   },
   { timestamps: true }
 );
 
 const Notification = mongoose.model("Notification", notificationSchema);
-module.exports = {
-  Notification,
-};

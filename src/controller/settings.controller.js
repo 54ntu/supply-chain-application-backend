@@ -7,6 +7,7 @@ const {
   comparedPassword,
   hashPassword,
 } = require("../services/authController");
+const { NotificationSetting } = require("../models/notificationSetting.models");
 class SettingsController {
   static async changePassword(req, res) {
     //get the distributor id or salerperson id from the req.user
@@ -154,7 +155,7 @@ class SettingsController {
 
     try {
       const userId = new mongoose.Types.ObjectId(req.user._id);
-      console.log(typeof userId);
+      // console.log(typeof userId);
       if (!userId) {
         return res.status(400).json({
           error: "userId  is not valid",
@@ -168,18 +169,19 @@ class SettingsController {
       } = req.body;
 
       //update notification table by finding the distributor id from the notification table
-      const updatedNotificationSettings = await Notification.findByIdAndUpdate(
-        { userId: userId },
-        {
-          orderConfirmation,
-          orderDelayed,
-          orderDelivered,
-          emailNotifications,
-        },
-        {
-          new: true,
-        }
-      );
+      const updatedNotificationSettings =
+        await NotificationSetting.findByIdAndUpdate(
+          { userId: userId },
+          {
+            orderConfirmation,
+            orderDelayed,
+            orderDelivered,
+            emailNotifications,
+          },
+          {
+            new: true,
+          }
+        );
 
       if (!updatedNotificationSettings) {
         return res.status(500).json({
