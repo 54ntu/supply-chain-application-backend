@@ -12,7 +12,7 @@ productRouter
     upload.single("productimage"),
     ProductController.addProduct
   )
-  .get(ProductController.viewAllProduct);
+  .get(UserMiddleware.isUserLoggedIn, ProductController.viewAllProduct);
 
 productRouter
   .route("/:id")

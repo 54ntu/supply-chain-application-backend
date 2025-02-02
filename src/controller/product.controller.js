@@ -3,7 +3,7 @@ const { generateFKU } = require("../services/generateFKU");
 const { generateSKU } = require("../services/generateSKU");
 const { Variant } = require("../models/variants.models");
 const { ApiResponse } = require("../services/ApiResponse");
-const { isValidObjectId } = require("mongoose");
+const { isValidObjectId, default: mongoose } = require("mongoose");
 class ProductController {
   static async addProduct(req, res) {
     //get the distributor id from the req.user.id
@@ -206,23 +206,23 @@ class ProductController {
         });
       }
 
+      console.log(typeof id);
+
       const product = await Product.aggregate([
         {
           $match: {
-            _id: id,
+            _id: new mongoose.Types.ObjectId(id),
           },
         },
         {
           $lookup: {
-            from: "variants",
-            localField: "_id",
-            foreignField: "product_id",
+            from: "variants", // kun table baat data fetch garne i.e. variants
+            localField: "_id", //field in the product table
+            foreignField: "product_id", //field in the variants for the same field
             as: "variants",
           },
         },
-        {
-          $unwind: "$variants",
-        },
+
         {
           $project: {
             _id: 1,
@@ -232,6 +232,8 @@ class ProductController {
             product_description: 1,
             product_weight: 1,
             product_price: 1,
+            min_price: 1,
+            max_price: 1,
             product_image: 1,
             length: 1,
             breadth: 1,
@@ -247,7 +249,7 @@ class ProductController {
         },
       ]);
 
-      if (!product) {
+      if (product.length === 0) {
         return res.status(404).json({ message: "product not found" });
       }
 
@@ -256,7 +258,7 @@ class ProductController {
         .json(
           new ApiResponse(
             200,
-            productm,
+            product,
             "product data fetched successfully..!!!!"
           )
         );
@@ -282,15 +284,34 @@ class ProductController {
           .json({ message: "please provide valid product id" });
       }
 
-      const distributorId = req.user._id;
-      if (!distributorId) {
+      const distributorid = req.user._id;
+      if (!distributorid) {
         return res.status(400).json({ message: "Distributor id is required" });
       }
 
-      await Product.findOneAndDelete({
+      const isProductExist = await Product.findById({
         _id: id,
-        distributorId,
       });
+
+      if (!isProductExist) {
+        return res.status(404).json({
+          error: `product with the id ${id} not found`,
+        });
+      }
+
+      if (isProductExist.distributorId.toString() != distributorid) {
+        return res.status(403).json({
+          error: "you are not authorized to delete this product",
+        });
+      }
+
+      //if valid user and product is found then delete that
+      const deletedproduct = await isProductExist.deleteOne({ _id: id });
+      if (deletedproduct.acknowledged == false) {
+        return res.status(500).json({
+          error: "product deletion failed.😒😒😒😒",
+        });
+      }
 
       return res.status(200).json({
         message: "product deleted successfully..!!",
@@ -318,18 +339,9 @@ class ProductController {
           .json({ message: "please provide valid product id" });
       }
 
-      const distributorId = req.user._id;
-      if (!distributorId) {
+      const distributorid = req.user._id;
+      if (!distributorid) {
         return res.status(400).json({ message: "Distributor id is required" });
-      }
-
-      const product = await Product.findOne({
-        _id: id,
-        distributorId,
-      });
-
-      if (!product) {
-        return res.status(404).json({ message: "product not found" });
       }
 
       //get the product image from the req.file
@@ -364,6 +376,23 @@ class ProductController {
         return res.status(400).json({ message: "All fields are required" });
       }
 
+      const product = await Product.findById({
+        _id: id,
+      });
+
+      if (!product) {
+        return res
+          .status(404)
+          .json({ message: "product with the given id not found" });
+      }
+
+      //if product found then check whether authorized user or not
+      if (product.distributorId.toString != distributorid) {
+        return res.status(403).json({
+          error: "this product does not belongs to you😡😡😡😡🤬🤬",
+        });
+      }
+
       //update the product data
       product.category = category;
       product.product_name = product_name;
@@ -379,6 +408,30 @@ class ProductController {
       await product.save();
 
       //handle variants updation as well
+      if (variants) {
+        const updatedVariants = JSON.parse(variants); //parse if sent as a JSON string
+        for (const variant of updatedVariants) {
+          if (variant._id) {
+            //update existing variant
+            await Variant.findByIdAndUpdate(variant._id, {
+              SKU: variant.SKU,
+              attributes: variant.attributes,
+              variant_price: variant.variant_price,
+              stock: variant.stock,
+            });
+          } else {
+            //add a new variant
+            const newVariant = new Variant({
+              product_id: id,
+              SKU: variant.SKU,
+              attributes: variant.attributes,
+              variant_price: variant.variant_price,
+              stock: variant.stock,
+            });
+            await newVariant.save();
+          }
+        }
+      }
 
       return res.status(200).json({
         message: "product updated successfully",
