@@ -70,7 +70,50 @@ class NotificationController {
     }
   }
 
-  static async updateNotification(req, res) {}
+  static async updateNotification(req, res) {
+    //get the userid from the req.user
+    //get the user type from the req.user.role
+    //get the status data from the req.body
+
+    try {
+      const userId = req.user.id;
+      const userType = req.user.role;
+
+      if (!userId || !userType) {
+        return res.status(400).json({
+          success: false,
+          message: "userid and usertype are required",
+        });
+      }
+
+      //get the status from the req.body
+
+      const { status } = req.body;
+
+      const updateNotification = await Notification.updateMany(
+        {
+          userId,
+          userType,
+        },
+        { status }
+      );
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            updateNotification,
+            "notification updated successfully"
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "something went wrong😑😑😑😑",
+      });
+    }
+  }
 }
 
 module.exports = {
