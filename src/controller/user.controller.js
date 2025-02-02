@@ -230,6 +230,27 @@ class UserController {
     });
   }
 
+  static async logout(req, res) {
+    //set cookie options for secure and httpOnly cookies
+    try {
+      const options = {
+        httpOnly: true,
+        secure: envConfig.node_env === "production",
+      };
+
+      //clear access token cookies from the client's browser
+      return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .json(new ApiResponse(200, {}, "user logged out successfully"));
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "something went wrong while logging out!!",
+      });
+    }
+  }
+
   static async handleForgotPassword(req, res) {
     try {
       const { email } = req.body;
