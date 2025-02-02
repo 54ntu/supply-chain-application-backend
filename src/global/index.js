@@ -18,8 +18,25 @@ const Province = {
   SUDURPASHCHIM: "SUDURPASHCHIM",
 };
 
+const orderStatus = {
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  SHIPPED: "SHIPPED",
+  DELIVERED: "DELIVERED",
+  CANCELLED: "CANCELLED",
+};
+
+const paymentStatus = {
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  REFUNDED: "REFUNDED",
+  CANCELLED: "CANCELLED",
+};
+
 module.exports = {
   UserRole,
   shippingMethod,
   Province,
+  orderStatus,
+  paymentStatus,
 };
