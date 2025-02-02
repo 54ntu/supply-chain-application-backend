@@ -22,7 +22,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["order_completed", "low_stock_alert", "restock_reminder"],
+      enum: ["order", "stock", "restock_reminder"],
       required: true,
     },
     status: {

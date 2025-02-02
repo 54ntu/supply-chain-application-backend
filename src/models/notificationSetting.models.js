@@ -3,15 +3,15 @@ const { UserRole } = require("../global/index");
 
 const notificationSettingSchema = new mongoose.Schema(
   {
-    orderConfirmation: {
+    order: {
       type: Boolean,
       default: true,
     },
-    orderDelayed: {
+    stock: {
       type: Boolean,
       default: true,
     },
-    orderDelivered: {
+    restock_remainder: {
       type: Boolean,
       default: true,
     },

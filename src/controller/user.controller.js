@@ -209,6 +209,7 @@ class UserController {
       {
         _id: user._id,
         role: user.role,
+        email: email,
       },
 
       envConfig.accessTokenSecret,
