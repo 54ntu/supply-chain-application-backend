@@ -6,6 +6,7 @@ const { categoryRouter } = require("./src/routes/category.routes");
 const productRouter = require("./src/routes/product.routes");
 const { customerRouter } = require("./src/routes/customer.routes");
 const { settingRouter } = require("./src/routes/settings.routes");
+const { orderRouter } = require("./src/routes/order.routes");
 const app = express();
 
 app.use(express.json());
@@ -29,6 +30,9 @@ app.use("/api/v1/customer", customerRouter);
 
 //routes for settings controller
 app.use("/api/v1/setting", settingRouter);
+
+//route for order controller
+app.use("/api/v1/order", orderRouter);
 
 module.exports = {
   app,
