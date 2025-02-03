@@ -3,6 +3,10 @@ const { Province } = require("../global/index");
 
 const shippingDetailSchema = new mongoose.Schema(
   {
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+    },
     fullName: {
       type: String,
       required: true,
@@ -32,7 +36,7 @@ const shippingDetailSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    Adress: {
+    Address: {
       type: String,
     },
     landmark: {
