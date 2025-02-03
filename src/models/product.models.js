@@ -70,6 +70,10 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 10,
     },
+    variants: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Variant",
+    },
   },
   { timestamps: true }
 );

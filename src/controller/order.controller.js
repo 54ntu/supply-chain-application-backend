@@ -6,6 +6,7 @@ const { ApiResponse } = require("../services/ApiResponse");
 class OrderController {
   static async createOrder(req, res) {
     //get the salesperson id from req.user as salesperson neeed to be logged in to create order
+    //and also the role from req.user.role
     //get the customer id from req.body
     //get all the data from teh req.body
     //validate all the details
@@ -18,6 +19,7 @@ class OrderController {
 
     try {
       const salespersonId = req.user._id;
+      const role = req.user.role;
       if (!salespersonId) {
         return res.status(400).json({
           success: false,
@@ -42,48 +44,60 @@ class OrderController {
       }
 
       let total_amount = 0;
+      let total_quantity = 0;
 
       //get each item of the orderItems
       for (let item of orderItems) {
         //first get the product from the Product collection
+        console.log(`item : ${item.quantity}`);
 
         const product = await Product.findById(item.productId);
+        console.log(`product.variants :${product.variants}`);
 
         //check stock level
         if (product.total_stock < item.quantity) {
-          await createNotification(
-            salespersonId,
-            "stock",
-            "low stock",
-            `not enough stock for ${product.product_name}. Only ${product.total_stock}left `
-          );
+          await createNotification({
+            userId: salespersonId,
+            userType: role,
+            type: "stock",
+            title: "low stock",
+            message: `not enough stock for ${product.product_name}. Only ${product.total_stock}left `,
+          });
         }
 
         //check for restock threshold
         if (product.total_stock - item.quantity < product.restock_threshold) {
-          await createNotification(
-            salespersonId,
-            "stock",
-            "Restock Reminder",
-            `product ${product.product_name} ${product.FKU} has dropped below the threshold`
-          );
+          await createNotification({
+            userId: salespersonId,
+            userType: role,
+            type: "stock",
+            title: "Restock Reminder",
+            message: `product ${product.product_name} ${product.FKU} has dropped below the threshold`,
+          });
         }
 
         //calculate the item total price
-        total_amount = item.quantity * item.price - item.discount;
+        total_amount += item.quantity * item.price - item.discount;
+
+        //calculate the total quantity
+        total_quantity += item.quantity;
       }
       total_amount += shipping_charge + tax - discount;
+      // console.log(total_quantity);
 
       //create new order
       const newOrder = await Order.create({
+        salesPerson: salespersonId,
         customer: customerId,
         discount,
         shipping_charge,
         tax,
         order_status,
         payment_status,
+        total_quantity,
         total_amount,
       });
+      // console.log("new order samma puge hoi");
 
       if (!newOrder) {
         return res.status(500).json({
@@ -115,7 +129,7 @@ class OrderController {
         new ApiResponse(
           201,
           {
-            ...newOrder,
+            ...newOrder._doc,
             order_items: createdOrderItems,
           },
           "order created successfully"
@@ -124,7 +138,7 @@ class OrderController {
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: "something went wrong",
+        message: `something went wrong${error}`,
       });
     }
   }

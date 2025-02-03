@@ -1,7 +1,8 @@
 const { Notification } = require("../models/notification.models");
-const createNotification = async (userId, type, title, message) => {
+const createNotification = async (userId, userType, type, title, message) => {
   await Notification.create({
     userId,
+    userType,
     type,
     title,
     message,

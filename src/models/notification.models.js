@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { UserRole } = require("../global");
 
 const notificationSchema = new mongoose.Schema(
   {

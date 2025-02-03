@@ -12,6 +12,7 @@ class NotificationController {
     //fetch notification message based on allowed types i.e. notification settings of the user
     //return success message
     try {
+      console.log("get notification maa xu hoiii");
       const userId = req.user._id; //get user id from the middleware (req.user)
       const userType = req.user.role; //get user role from the middleware
 
@@ -76,7 +77,7 @@ class NotificationController {
     //get the status data from the req.body
 
     try {
-      const userId = req.user.id;
+      const userId = req.user._id;
       const userType = req.user.role;
 
       if (!userId || !userType) {
@@ -89,6 +90,12 @@ class NotificationController {
       //get the status from the req.body
 
       const { status } = req.body;
+      if (!status) {
+        return res.status(400).json({
+          success: false,
+          message: "status is required",
+        });
+      }
 
       const updateNotification = await Notification.updateMany(
         {

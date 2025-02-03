@@ -33,6 +33,11 @@ const orderSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    total_quantity: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     order_status: {
       type: String,
       enum: [

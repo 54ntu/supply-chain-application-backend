@@ -131,6 +131,9 @@ class ProductController {
             await newVariant.save();
             variantArray.push(newVariant);
             totalStock += newVariant.stock; //add total stock
+            //add variants id into the product table
+            existingProduct.variants = newVariant._id;
+            await existingProduct.save();
           }
         }
       }
@@ -206,7 +209,7 @@ class ProductController {
         });
       }
 
-      console.log(typeof id);
+      // console.log(typeof id);
 
       const product = await Product.aggregate([
         {
@@ -240,11 +243,7 @@ class ProductController {
             width: 1,
             restock_threshold: 1,
             total_stock: 1,
-            "variants._id": 1,
-            "variants.SKU": 1,
-            "variants.attributes": 1,
-            "variants.variant_price": 1,
-            "variants.stock": 1,
+            variants: 1,
           },
         },
       ]);
