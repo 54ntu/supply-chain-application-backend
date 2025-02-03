@@ -1,6 +1,7 @@
 const { Product } = require("../models/product.models");
 const { createNotification } = require("../services/notificationService");
 const { Order } = require("../models/order.models");
+const { Variant } = require("../models/variants.models");
 const { OrderItem } = require("../models/orderItems.models");
 const { ApiResponse } = require("../services/ApiResponse");
 class OrderController {
@@ -49,10 +50,8 @@ class OrderController {
       //get each item of the orderItems
       for (let item of orderItems) {
         //first get the product from the Product collection
-        console.log(`item : ${item.quantity}`);
-
         const product = await Product.findById(item.productId);
-        console.log(`product.variants :${product.variants}`);
+        // console.log(`product.variants :${product}`);
 
         //check stock level
         if (product.total_stock < item.quantity) {
@@ -124,6 +123,40 @@ class OrderController {
         });
       }
 
+      //code for reducing the stock level of the products based on the variants
+      for (let item of orderItems) {
+        console.log(`item : ${item.quantity}`);
+        const product = await Product.findById(item.productId);
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            message: "product not found",
+          });
+        }
+
+        //fetch variants data from the variant collect by comparing both variant id and product id stored in the variant collection
+        const variants = await Variant.find({
+          _id: { $in: product.variants },
+          product_id: product._id,
+        });
+        // console.log(variants);
+
+        //decrease the variant wise stock
+        for (let variant of variants) {
+          if (variant.stock >= item.quantity) {
+            variant.stock -= item.quantity; //reduce the stock of the variant
+            await variant.save();
+          } else {
+            await createNotification({
+              userId: salespersonId,
+              userType: role,
+              type: "stock",
+              title: "restock_alert",
+              message: `variant of id ${variant._id} has dropped below threshold`,
+            });
+          }
+        }
+      }
       //send the response
       return res.status(201).json(
         new ApiResponse(
