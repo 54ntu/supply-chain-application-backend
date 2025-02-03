@@ -8,6 +8,7 @@ const { customerRouter } = require("./src/routes/customer.routes");
 const { settingRouter } = require("./src/routes/settings.routes");
 const { orderRouter } = require("./src/routes/order.routes");
 const { notificationRouter } = require("./src/routes/notification.routes");
+const { addressRouter } = require("./src/routes/address.routes");
 const app = express();
 
 app.use(express.json());
@@ -37,6 +38,9 @@ app.use("/api/v1/notification", notificationRouter);
 
 //route for order controller
 app.use("/api/v1/order", orderRouter);
+
+//router for address controller
+app.use("/api/v1/address", addressRouter);
 
 module.exports = {
   app,
