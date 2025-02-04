@@ -306,6 +306,9 @@ class OrderController {
           as: "orderitemsDetails",
         },
       },
+      {
+        $unwind: "$orderitemsDetails",
+      },
 
       {
         $lookup: {
@@ -314,6 +317,10 @@ class OrderController {
           foreignField: "_id",
           as: "productdetails",
         },
+      },
+
+      {
+        $unwind: "$productdetails",
       },
 
       //fetch the category as well
@@ -325,13 +332,39 @@ class OrderController {
           as: "categories",
         },
       },
+      {
+        $unwind: "$categories",
+      },
 
-      // {
-      //   $project: {
-      //     orderitemsDetails: 1,
-      //     productdetails: 1,
-      //   },
-      // },
+      {
+        $group: {
+          _id: "$_id",
+          createdAt: { $first: "$createdAt" },
+          customerDetails: { $first: "$customerDetails" },
+          shippingDetails: { $first: "$shippingDetails" },
+          total_amount: { $first: "$total_amount" },
+          order_status: { $first: "$order_status" },
+          orderItems: {
+            $push: {
+              quantity: "$orderitemsDetails.quantity",
+              price: "$orderitemsDetails.price",
+              discount: "$orderitemsDetails.discount",
+              total_price: "$orderitemsDetails.total_price",
+              // productDetails: {
+              //   product_name: "$productDetails.product_name",
+              //   FKU: "$productDetails.FKU",
+              // },
+              productdetails: {
+                product_name: "$productdetails.product_name",
+                FKU: "$productdetails.FKU",
+              },
+              category: {
+                category_name: "$categories.category_name",
+              },
+            },
+          },
+        },
+      },
     ]);
 
     return res.json(orders);
