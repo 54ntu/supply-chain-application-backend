@@ -3,8 +3,7 @@ const { hashPassword } = require("../services/authController");
 const { ApiResponse } = require("../services/ApiResponse");
 const { default: mongoose, isValidObjectId } = require("mongoose");
 const { SalesPerson } = require("../models/salesPerson.models");
-const { Notification } = require("../models/notification.models");
-
+const { NotificationSetting } = require("../models/notificationSetting.models");
 class SalesPersonController {
   static async addSalesperson(req, res) {
     //get the distributor id from the middleware
@@ -103,7 +102,7 @@ class SalesPersonController {
     }
 
     //create initial notification settings for the salesperson
-    await Notification.create({
+    await NotificationSetting.create({
       userId: isSalespersonCreated._id,
       userType: isSalespersonCreated.role,
     });

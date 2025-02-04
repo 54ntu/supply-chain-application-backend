@@ -3,6 +3,7 @@ const { Order } = require("../models/order.models");
 const { Refund } = require("../models/returnRefund.models");
 const { refundRequest } = require("../global");
 const { ApiResponse } = require("../services/ApiResponse");
+const { SalesPerson } = require("../models/salesPerson.models");
 
 class RefundController {
   static async createRefundRequest(req, res) {
@@ -49,14 +50,14 @@ class RefundController {
     }
 
     //create refund request
-    const refundRequest = await Refund.create({
+    const refund = await Refund.create({
       orderId: order,
       salespersonId,
       reason,
       status: refundRequest.PENDING,
     });
 
-    if (!refundRequest) {
+    if (!refund) {
       return res.status(500).json({
         success: false,
         message: "refund request creation failed",
@@ -65,8 +66,94 @@ class RefundController {
 
     return res
       .status(201)
+      .json(new ApiResponse(201, refund, "request created successfully"));
+  }
+
+  static async getRefundRequestData(req, res) {
+    //i think this api will be for the distributor and i want to fetch those request created by the
+    //salesperson who belongs to logged in distributor
+
+    //get the distributor id from the req.user._id
+    const distributorId = req.user._id;
+    if (!distributorId) {
+      return res.status(400).json({
+        success: false,
+        message: "distributor id is required",
+      });
+    }
+
+    //find the salesperson belongs to that distributor
+    const salespersons = await SalesPerson.find({ distributor: distributorId });
+    if (salespersons.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "salespersons data related to you(distributor) not found",
+      });
+    }
+
+    //extract salespersons id
+    const salespersonid = salespersons.map((salesperson) => salesperson._id);
+
+    // console.log(salespersonId);
+    //fetch the data from the Refund schema on the basis of salesperson id
+    const refundRequests = await Refund.aggregate([
+      {
+        $match: { salespersonId: { $in: salespersonid } },
+      },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "orderDetails",
+        },
+      },
+      {
+        $unwind: "$orderDetails",
+      },
+
+      //for salesrep
+      {
+        $lookup: {
+          from: "salespeople",
+          localField: "salespersonId",
+          foreignField: "_id",
+          as: "salespersonDetails",
+        },
+      },
+      {
+        $unwind: "$salespersonDetails",
+      },
+      {
+        $project: {
+          orderId: 1,
+          createdAt: 1,
+          customerId: "$orderDetails.customer",
+          salesRepresentative: {
+            $concat: [
+              { $ifNull: ["$salespersonDetails.firstname", ""] },
+              " ",
+              { $ifNull: ["$salespersonDetails.lastname", ""] },
+            ],
+          },
+          reason: 1,
+          status: 1,
+        },
+      },
+    ]);
+    // console.log(refundRequests);
+
+    if (refundRequests.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "request not available",
+      });
+    }
+
+    return res
+      .status(200)
       .json(
-        new ApiResponse(201, refundRequest, "request created successfully")
+        new ApiResponse(200, refundRequests, "request fetched successfully")
       );
   }
 }

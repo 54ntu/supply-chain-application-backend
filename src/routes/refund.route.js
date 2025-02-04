@@ -7,7 +7,14 @@ refundRouter
   .route("/:id")
   .post(UserMiddleware.isUserLoggedIn, RefundController.createRefundRequest);
 
-  
+refundRouter
+  .route("/")
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    RefundController.getRefundRequestData
+  );
+
 module.exports = {
   refundRouter,
 };
