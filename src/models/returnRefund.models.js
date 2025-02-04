@@ -7,7 +7,7 @@ const refundSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
     },
-    salesperonId: {
+    salespersonId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "SalesPerson",
     },
