@@ -8,4 +8,8 @@ orderRouter
   .post(UserMiddleware.isUserLoggedIn, OrderController.createOrder)
   .get(UserMiddleware.isUserLoggedIn, OrderController.getOrder);
 
+orderRouter
+  .route("/:id")
+  .get(UserMiddleware.isUserLoggedIn, OrderController.getOrderByid);
+
 module.exports = { orderRouter };

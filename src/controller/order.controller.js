@@ -257,6 +257,7 @@ class OrderController {
   static async getOrderByid(req, res) {
     //get the order id from the req.params
     const { id } = req.params;
+    // console.log(typeof id);
     if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
@@ -266,49 +267,74 @@ class OrderController {
 
     //fetch the order data from the database
 
-    // const orders = await Order.aggregate([
-    //   {
-    //     $match: {
-    //       salesPerson: new mongoose.Types.ObjectId(salespersonId),
-    //     },
-    //   },
-    //   {
-    //     $lookup: {
-    //       from: "customers",
-    //       localField: "customer",
-    //       foreignField: "_id",
-    //       as: "customerDetails",
-    //     },
-    //   },
-    //   {
-    //     $lookup: {
-    //       from: "shippingdetails",
-    //       localField: "shippingAddress",
-    //       foreignField: "_id",
-    //       as: "shippingDetails",
-    //     },
-    //   },
+    const orders = await Order.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customer",
+          foreignField: "_id",
+          as: "customerDetails",
+        },
+      },
+      {
+        $unwind: "$customerDetails",
+      },
+      {
+        $lookup: {
+          from: "shippingdetails",
+          localField: "shippingAddress",
+          foreignField: "_id",
+          as: "shippingDetails",
+        },
+      },
 
-    //   {
-    //     $unwind: "$shippingDetails",
-    //   },
-    //   {
-    //     $project: {
-    //       _id: 1,
-    //       createdAt: 1,
-    //       customer: { $arrayElemAt: ["$customerDetails.customerName", 0] },
-    //       Destination: {
-    //         $concat: [
-    //           { $ifNull: ["$shippingDetails.province", ""] },
-    //           ",",
-    //           { $ifNull: ["$shippingDetails.city", ""] },
-    //         ],
-    //       },
-    //       total_amount: 1,
-    //       order_status: 1,
-    //     },
-    //   },
-    // ]);
+      {
+        $unwind: "$shippingDetails",
+      },
+
+      //get the orderItems
+      {
+        $lookup: {
+          from: "orderitems",
+          localField: "_id",
+          foreignField: "orderId",
+          as: "orderitemsDetails",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "products",
+          localField: "orderitemsDetails.productId",
+          foreignField: "_id",
+          as: "productdetails",
+        },
+      },
+
+      //fetch the category as well
+      {
+        $lookup: {
+          from: "categories",
+          localField: "productdetails.category",
+          foreignField: "_id",
+          as: "categories",
+        },
+      },
+
+      // {
+      //   $project: {
+      //     orderitemsDetails: 1,
+      //     productdetails: 1,
+      //   },
+      // },
+    ]);
+
+    return res.json(orders);
   }
 }
 
