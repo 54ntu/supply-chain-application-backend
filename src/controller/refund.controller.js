@@ -1,4 +1,4 @@
-const { isValidObjectId } = require("mongoose");
+const { isValidObjectId, default: mongoose } = require("mongoose");
 const { Order } = require("../models/order.models");
 const { Refund } = require("../models/returnRefund.models");
 const { refundRequest } = require("../global");
@@ -155,6 +155,123 @@ class RefundController {
       .json(
         new ApiResponse(200, refundRequests, "request fetched successfully")
       );
+  }
+
+  static async findRefundRequestDataById(req, res) {
+    //get the refundrequest id from the req.params
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "please provide valid request id ",
+      });
+    }
+
+    //query to the model
+    const refundDatas = await Refund.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+        },
+      },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "orderDetails",
+        },
+      },
+      {
+        $unwind: "$orderDetails",
+      },
+      //for orderItems
+      {
+        $lookup: {
+          from: "orderitems",
+          localField: "orderDetails._id",
+          foreignField: "orderId",
+          as: "orderItemsDetails",
+        },
+      },
+
+      //lookup for product data
+      {
+        $lookup: {
+          from: "products",
+          localField: "orderItemsDetails.productId",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "salespeople",
+          localField: "salespersonId",
+          foreignField: "_id",
+          as: "salespersonDetails",
+        },
+      },
+      {
+        $unwind: "$salespersonDetails",
+      },
+      {
+        $lookup: {
+          from: "customers",
+          localField: "orderDetails.customer",
+          foreignField: "_id",
+          as: "customerDetails",
+        },
+      },
+      {
+        $unwind: "$customerDetails",
+      },
+      {
+        $lookup: {
+          from: "shippingdetails",
+          localField: "orderDetails.shippingAddress",
+          foreignField: "_id",
+          as: "shippingDetails",
+        },
+      },
+      {
+        $unwind: "$shippingDetails",
+      },
+
+      //   {
+      //     $project: {
+      //       orderId: 1,
+      //       createdAt: 1,
+      //       customerId: "$orderDetails.customer",
+      //       salesRepresentative: {
+      //         $concat: [
+      //           { $ifNull: ["$salespersonDetails.firstname", ""] },
+      //           " ",
+      //           {
+      //             $ifNull: ["$salespersonDetails.lastname", ""],
+      //           },
+      //         ],
+      //       },
+      //       billingAddress: {
+      //         $concat: [
+      //           { $ifNull: ["$shippingDetails.landmark", ""] },
+      //           " ",
+      //           { $ifNull: ["$shippingDetails.Area", ""] },
+      //           " ",
+      //           { $ifNull: ["$shippingDetails.Address", ""] },
+      //           " ",
+      //           { $ifNull: ["$shippingDetails.province", ""] },
+      //           " ",
+      //           { $ifNull: ["$shippingDetails.city", ""] },
+      //         ],
+      //       },
+      //     },
+      //   },
+    ]);
+    return res
+      .status(200)
+      .json(new ApiResponse(200, refundDatas, "request fetched successfully"));
   }
 }
 

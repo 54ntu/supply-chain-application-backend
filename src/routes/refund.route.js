@@ -5,7 +5,12 @@ const refundRouter = express.Router();
 
 refundRouter
   .route("/:id")
-  .post(UserMiddleware.isUserLoggedIn, RefundController.createRefundRequest);
+  .post(UserMiddleware.isUserLoggedIn, RefundController.createRefundRequest)
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    RefundController.findRefundRequestDataById
+  );
 
 refundRouter
   .route("/")
