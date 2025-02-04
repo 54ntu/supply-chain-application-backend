@@ -5,6 +5,7 @@ const orderRouter = express.Router();
 
 orderRouter
   .route("/")
-  .post(UserMiddleware.isUserLoggedIn, OrderController.createOrder);
+  .post(UserMiddleware.isUserLoggedIn, OrderController.createOrder)
+  .get(UserMiddleware.isUserLoggedIn, OrderController.getOrder);
 
 module.exports = { orderRouter };

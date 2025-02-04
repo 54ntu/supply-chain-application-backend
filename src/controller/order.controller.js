@@ -4,6 +4,9 @@ const { Order } = require("../models/order.models");
 const { Variant } = require("../models/variants.models");
 const { OrderItem } = require("../models/orderItems.models");
 const { ApiResponse } = require("../services/ApiResponse");
+const { isValidObjectId } = require("mongoose");
+const { ShippingDetail } = require("../models/address.models");
+const { default: mongoose } = require("mongoose");
 class OrderController {
   static async createOrder(req, res) {
     //get the salesperson id from req.user as salesperson neeed to be logged in to create order
@@ -84,6 +87,14 @@ class OrderController {
       total_amount += shipping_charge + tax - discount;
       // console.log(total_quantity);
 
+      //get the shipping address of the related customer
+      const shippingAddress = await ShippingDetail.findOne({ customerId });
+      if (!shippingAddress) {
+        return res.status(404).json({
+          message: "shipping address not found for the given customer",
+        });
+      }
+
       //create new order
       const newOrder = await Order.create({
         salesPerson: salespersonId,
@@ -95,6 +106,7 @@ class OrderController {
         payment_status,
         total_quantity,
         total_amount,
+        shippingAddress: shippingAddress,
       });
       // console.log("new order samma puge hoi");
 
@@ -174,6 +186,129 @@ class OrderController {
         message: `something went wrong${error}`,
       });
     }
+  }
+
+  static async getOrder(req, res) {
+    //get the salesperson id from the req.user
+    const salespersonId = req.user._id;
+
+    if (!salespersonId) {
+      return res.status(400).json({
+        message: "please provide salesperson id",
+      });
+    }
+
+    const orders = await Order.aggregate([
+      {
+        $match: {
+          salesPerson: new mongoose.Types.ObjectId(salespersonId),
+        },
+      },
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customer",
+          foreignField: "_id",
+          as: "customerDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "shippingdetails",
+          localField: "shippingAddress",
+          foreignField: "_id",
+          as: "shippingDetails",
+        },
+      },
+
+      {
+        $unwind: "$shippingDetails",
+      },
+      {
+        $project: {
+          _id: 1,
+          createdAt: 1,
+          customer: { $arrayElemAt: ["$customerDetails.customerName", 0] },
+          Destination: {
+            $concat: [
+              { $ifNull: ["$shippingDetails.province", ""] },
+              ",",
+              { $ifNull: ["$shippingDetails.city", ""] },
+            ],
+          },
+          total_amount: 1,
+          order_status: 1,
+        },
+      },
+    ]);
+
+    if (orders.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `order is not available for the salesperon with id ${salespersonId}`,
+      });
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, orders, "order fetched successfully"));
+  }
+
+  static async getOrderByid(req, res) {
+    //get the order id from the req.params
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "invalid id",
+      });
+    }
+
+    //fetch the order data from the database
+
+    // const orders = await Order.aggregate([
+    //   {
+    //     $match: {
+    //       salesPerson: new mongoose.Types.ObjectId(salespersonId),
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "customers",
+    //       localField: "customer",
+    //       foreignField: "_id",
+    //       as: "customerDetails",
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "shippingdetails",
+    //       localField: "shippingAddress",
+    //       foreignField: "_id",
+    //       as: "shippingDetails",
+    //     },
+    //   },
+
+    //   {
+    //     $unwind: "$shippingDetails",
+    //   },
+    //   {
+    //     $project: {
+    //       _id: 1,
+    //       createdAt: 1,
+    //       customer: { $arrayElemAt: ["$customerDetails.customerName", 0] },
+    //       Destination: {
+    //         $concat: [
+    //           { $ifNull: ["$shippingDetails.province", ""] },
+    //           ",",
+    //           { $ifNull: ["$shippingDetails.city", ""] },
+    //         ],
+    //       },
+    //       total_amount: 1,
+    //       order_status: 1,
+    //     },
+    //   },
+    // ]);
   }
 }
 

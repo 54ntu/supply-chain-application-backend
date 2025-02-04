@@ -59,7 +59,7 @@ const orderSchema = new mongoose.Schema(
       ],
       default: paymentStatus.PENDING,
     },
-    shippingAdress: {
+    shippingAddress: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ShippingDetail",
     },
