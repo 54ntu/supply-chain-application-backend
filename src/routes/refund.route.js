@@ -10,6 +10,11 @@ refundRouter
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
     RefundController.findRefundRequestDataById
+  )
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    RefundController.updateRefundRequest
   );
 
 refundRouter

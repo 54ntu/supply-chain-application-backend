@@ -356,6 +356,46 @@ class RefundController {
       });
     }
   }
+
+  static async updateRefundRequest(req, res) {
+    //get the refundrequest id from req.params
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "invalid id ",
+      });
+    }
+
+    //get the status from the req.body
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "status data is required",
+      });
+    }
+
+    //update the status of the return and refund request
+    const updatedStatus = await Refund.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedStatus) {
+      return res.status(500).json({
+        success: false,
+        message: "refund status updation failed",
+      });
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, updatedStatus, "status updated successfully"));
+  }
+  
 }
 
 module.exports = {
