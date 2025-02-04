@@ -33,10 +33,17 @@ const paymentStatus = {
   CANCELLED: "CANCELLED",
 };
 
+const refundRequest = {
+  APPROVED: "APPROVED",
+  PENDING: "PENDING",
+  REJECTED: "REJECTED",
+};
+
 module.exports = {
   UserRole,
   shippingMethod,
   Province,
   orderStatus,
   paymentStatus,
+  refundRequest,
 };

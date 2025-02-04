@@ -371,7 +371,6 @@ class OrderController {
     //get the salespersonid from the req.user
     try {
       const { id } = req.params;
-      console.log(typeof id);
       const salespersonId = req.user._id;
 
       if (!isValidObjectId(id)) {
@@ -390,6 +389,13 @@ class OrderController {
 
       //get the data from the req.body
       const { order_status, payment_status } = req.body;
+
+      if (!order_status || !payment_status) {
+        return res.status(400).json({
+          success: false,
+          message: "orderstatus && paymentstatus fields are required",
+        });
+      }
 
       //check the order on the basis of order id salespersonid
       const order = await Order.findOne({
