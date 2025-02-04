@@ -10,6 +10,7 @@ orderRouter
 
 orderRouter
   .route("/:id")
-  .get(UserMiddleware.isUserLoggedIn, OrderController.getOrderByid);
+  .get(UserMiddleware.isUserLoggedIn, OrderController.getOrderByid)
+  .patch(UserMiddleware.isUserLoggedIn, OrderController.updateOrder);
 
 module.exports = { orderRouter };

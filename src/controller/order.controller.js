@@ -350,10 +350,6 @@ class OrderController {
               price: "$orderitemsDetails.price",
               discount: "$orderitemsDetails.discount",
               total_price: "$orderitemsDetails.total_price",
-              // productDetails: {
-              //   product_name: "$productDetails.product_name",
-              //   FKU: "$productDetails.FKU",
-              // },
               productdetails: {
                 product_name: "$productdetails.product_name",
                 FKU: "$productdetails.FKU",
@@ -368,6 +364,61 @@ class OrderController {
     ]);
 
     return res.json(orders);
+  }
+
+  static async updateOrder(req, res) {
+    //get the orderid from the req.params
+    //get the salespersonid from the req.user
+    try {
+      const { id } = req.params;
+      console.log(typeof id);
+      const salespersonId = req.user._id;
+
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({
+          success: false,
+          message: "invalid order id ",
+        });
+      }
+
+      if (!salespersonId) {
+        return res.status(400).json({
+          success: false,
+          message: "salespersonid is required..",
+        });
+      }
+
+      //get the data from the req.body
+      const { order_status, payment_status } = req.body;
+
+      //check the order on the basis of order id salespersonid
+      const order = await Order.findOne({
+        _id: id,
+        salesPerson: salespersonId,
+      });
+      // console.log(order);
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "order with the given id not available",
+        });
+      }
+
+      //if order is found then update the order_status and payment_status //assumming that these two fields are needed to update
+      order.order_status = order_status;
+      order.payment_status = payment_status;
+      await order.save(); //save the data
+
+      return res.status(200).json({
+        success: true,
+        order,
+        message: "order with the given id is updated successfully.!",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message: "order updation failed",
+      });
+    }
   }
 }
 
