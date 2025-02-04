@@ -159,119 +159,202 @@ class RefundController {
 
   static async findRefundRequestDataById(req, res) {
     //get the refundrequest id from the req.params
-    const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({
+    try {
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({
+          success: false,
+          message: "please provide valid request id ",
+        });
+      }
+
+      //query to the model
+      const refundDatas = await Refund.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
+          },
+        },
+        {
+          $lookup: {
+            from: "orders",
+            localField: "orderId",
+            foreignField: "_id",
+            as: "orderDetails",
+          },
+        },
+        {
+          $unwind: "$orderDetails",
+        },
+        //for orderItems
+        {
+          $lookup: {
+            from: "orderitems",
+            localField: "orderDetails._id",
+            foreignField: "orderId",
+            as: "orderItemsDetails",
+          },
+        },
+
+        //lookup for product data
+        {
+          $lookup: {
+            from: "products",
+            localField: "orderItemsDetails.productId",
+            foreignField: "_id",
+            as: "productDetails",
+          },
+        },
+
+        //embed product data inside the order items and select the required fields
+        {
+          $addFields: {
+            orderItemsDetails: {
+              $map: {
+                input: "$orderItemsDetails",
+                as: "orderItem",
+                in: {
+                  _id: "$$orderItem._id",
+                  quantity: "$$orderItem.quantity",
+                  price: "$$orderItem.price",
+                  discount: "$$orderItem.discount",
+                  total_price: "$$orderItem.total_price",
+                  product: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$productDetails",
+                          as: "product",
+                          cond: {
+                            $eq: ["$$product._id", "$$orderItem.productId"],
+                          },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          $unset: "productDetails",
+        },
+
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salespersonId",
+            foreignField: "_id",
+            as: "salespersonDetails",
+          },
+        },
+        {
+          $unwind: "$salespersonDetails",
+        },
+        {
+          $lookup: {
+            from: "customers",
+            localField: "orderDetails.customer",
+            foreignField: "_id",
+            as: "customerDetails",
+          },
+        },
+        {
+          $unwind: "$customerDetails",
+        },
+        {
+          $lookup: {
+            from: "shippingdetails",
+            localField: "orderDetails.shippingAddress",
+            foreignField: "_id",
+            as: "shippingDetails",
+          },
+        },
+        {
+          $unwind: "$shippingDetails",
+        },
+
+        {
+          $project: {
+            orderId: 1,
+            createdAt: 1,
+            customerId: "$orderDetails.customer",
+            salesRepresentative: {
+              $concat: [
+                { $ifNull: ["$salespersonDetails.firstname", ""] },
+                " ",
+                {
+                  $ifNull: ["$salespersonDetails.lastname", ""],
+                },
+              ],
+            },
+            billingAddress: {
+              $concat: [
+                { $ifNull: ["$shippingDetails.landmark", ""] },
+                " ",
+                { $ifNull: ["$shippingDetails.Area", ""] },
+                " ",
+                { $ifNull: ["$shippingDetails.Address", ""] },
+                " ",
+                { $ifNull: ["$shippingDetails.province", ""] },
+                " ",
+                { $ifNull: ["$shippingDetails.city", ""] },
+              ],
+            },
+
+            customerInfo: {
+              customerName: "$customerDetails.customerName",
+              phone: "$customerDetails.phone",
+              email: "$customerDetails.email",
+            },
+            orderItems: {
+              $map: {
+                input: "$orderItemsDetails",
+                as: "item",
+                in: {
+                  _id: "$$item._id",
+                  quantity: "$$item.quantity",
+                  price: "$$item.price",
+                  discount: "$$item.discount",
+                  total: "$$item.total_price",
+                  product: {
+                    _id: "$$item.product._id",
+                    productName: "$$item.product.product_name",
+                  },
+                },
+              },
+            },
+
+            paymentDetails: {
+              subtotal: "$orderDetails.subtotal",
+              shippingCharge: "$orderDetails.shipping_charge",
+              discount: "$orderDetails.discount",
+              tax: "$orderDetails.tax",
+              total: "$orderDetails.total_amount",
+            },
+          },
+        },
+      ]);
+
+      if (refundDatas.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "refund data not found",
+        });
+      }
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, refundDatas, "request fetched successfully")
+        );
+    } catch (error) {
+      return res.status(500).json({
         success: false,
-        message: "please provide valid request id ",
+        message: "error on fetching the return and refund request data",
       });
     }
-
-    //query to the model
-    const refundDatas = await Refund.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(id),
-        },
-      },
-      {
-        $lookup: {
-          from: "orders",
-          localField: "orderId",
-          foreignField: "_id",
-          as: "orderDetails",
-        },
-      },
-      {
-        $unwind: "$orderDetails",
-      },
-      //for orderItems
-      {
-        $lookup: {
-          from: "orderitems",
-          localField: "orderDetails._id",
-          foreignField: "orderId",
-          as: "orderItemsDetails",
-        },
-      },
-
-      //lookup for product data
-      {
-        $lookup: {
-          from: "products",
-          localField: "orderItemsDetails.productId",
-          foreignField: "_id",
-          as: "productDetails",
-        },
-      },
-
-      {
-        $lookup: {
-          from: "salespeople",
-          localField: "salespersonId",
-          foreignField: "_id",
-          as: "salespersonDetails",
-        },
-      },
-      {
-        $unwind: "$salespersonDetails",
-      },
-      {
-        $lookup: {
-          from: "customers",
-          localField: "orderDetails.customer",
-          foreignField: "_id",
-          as: "customerDetails",
-        },
-      },
-      {
-        $unwind: "$customerDetails",
-      },
-      {
-        $lookup: {
-          from: "shippingdetails",
-          localField: "orderDetails.shippingAddress",
-          foreignField: "_id",
-          as: "shippingDetails",
-        },
-      },
-      {
-        $unwind: "$shippingDetails",
-      },
-
-      //   {
-      //     $project: {
-      //       orderId: 1,
-      //       createdAt: 1,
-      //       customerId: "$orderDetails.customer",
-      //       salesRepresentative: {
-      //         $concat: [
-      //           { $ifNull: ["$salespersonDetails.firstname", ""] },
-      //           " ",
-      //           {
-      //             $ifNull: ["$salespersonDetails.lastname", ""],
-      //           },
-      //         ],
-      //       },
-      //       billingAddress: {
-      //         $concat: [
-      //           { $ifNull: ["$shippingDetails.landmark", ""] },
-      //           " ",
-      //           { $ifNull: ["$shippingDetails.Area", ""] },
-      //           " ",
-      //           { $ifNull: ["$shippingDetails.Address", ""] },
-      //           " ",
-      //           { $ifNull: ["$shippingDetails.province", ""] },
-      //           " ",
-      //           { $ifNull: ["$shippingDetails.city", ""] },
-      //         ],
-      //       },
-      //     },
-      //   },
-    ]);
-    return res
-      .status(200)
-      .json(new ApiResponse(200, refundDatas, "request fetched successfully"));
   }
 }
 

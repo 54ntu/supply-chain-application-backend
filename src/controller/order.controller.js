@@ -49,6 +49,7 @@ class OrderController {
 
       let total_amount = 0;
       let total_quantity = 0;
+      let subtotal = 0;
 
       //get each item of the orderItems
       for (let item of orderItems) {
@@ -79,12 +80,12 @@ class OrderController {
         }
 
         //calculate the item total price
-        total_amount += item.quantity * item.price - item.discount;
+        subtotal += item.quantity * item.price - item.discount;
 
         //calculate the total quantity
         total_quantity += item.quantity;
       }
-      total_amount += shipping_charge + tax - discount;
+      total_amount = subtotal + shipping_charge + tax - discount;
       // console.log(total_quantity);
 
       //get the shipping address of the related customer
@@ -105,6 +106,7 @@ class OrderController {
         order_status,
         payment_status,
         total_quantity,
+        subtotal,
         total_amount,
         shippingAddress: shippingAddress,
       });

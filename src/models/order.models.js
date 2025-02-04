@@ -28,6 +28,11 @@ const orderSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    subtotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
     total_amount: {
       type: Number,
       required: true,
