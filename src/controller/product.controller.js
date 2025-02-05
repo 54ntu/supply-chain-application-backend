@@ -178,24 +178,59 @@ class ProductController {
     //return the response
 
     try {
-      const products = await Product.find();
-      if (products.length === 0) {
-        return res.status(404).json({ message: "products not found" });
-      }
+      const products = await Product.aggregate([
+        {
+          $lookup: {
+            from: "categories",
+            localField: "category",
+            foreignField: "_id",
+            as: "categoryDetail",
+          },
+        },
+        {
+          $unwind: "$categoryDetail",
+        },
+        //for variants data
+        {
+          $lookup: {
+            from: "variants",
+            localField: "variants",
+            foreignField: "_id",
+            as: "variantDetails",
+          },
+        },
+        {
+          $unwind: "$variantDetails",
+        },
+        {
+          $project: {
+            FKU: 1,
+            product_name: 1,
+            product_image: {
+              $concat: ["http://localhost:8000/", "$product_image"],
+            },
+            categoryName: "$categoryDetail.category_name",
+            price: "$variantDetails.variant_price",
+            total_stock: 1,
+          },
+        },
+      ]);
 
-      for (let product of products) {
-        // console.log(product);
-        product.product_image =
-          "http://localhost:8000/" + product.product_image;
+      if (!products || products.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "product data fetched successfully",
+        });
       }
       return res
         .status(200)
         .json(
-          new ApiResponse(200, products, "products data fetched successfully.")
+          new ApiResponse(200, products, "product details fetched successfully")
         );
     } catch (error) {
-      return res.status(500).json({
-        message: "error fetching products data",
+      return res.status(400).json({
+        success: false,
+        message: "something went wrong",
       });
     }
   }

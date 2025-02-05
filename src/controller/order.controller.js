@@ -174,6 +174,20 @@ class OrderController {
             });
           }
         }
+
+        //recalculate the total stoc for the product
+        const updatedVariants = await Variant.find({
+          _id: { $in: product.variants },
+        });
+
+        const updatedTotalStock = updatedVariants.reduce(
+          (sum, v) => sum + v.stock,
+          0
+        );
+
+        //update the product's total stock
+        product.total_stock = updatedTotalStock;
+        await product.save();
       }
       //send the response
       return res.status(201).json(
