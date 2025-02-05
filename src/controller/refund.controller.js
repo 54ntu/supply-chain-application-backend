@@ -395,7 +395,6 @@ class RefundController {
       .status(200)
       .json(new ApiResponse(200, updatedStatus, "status updated successfully"));
   }
-  
 }
 
 module.exports = {

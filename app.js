@@ -10,6 +10,7 @@ const { orderRouter } = require("./src/routes/order.routes");
 const { notificationRouter } = require("./src/routes/notification.routes");
 const { addressRouter } = require("./src/routes/address.routes");
 const { refundRouter } = require("./src/routes/refund.route");
+const { statsRouter } = require("./src/routes/refundStats.routes");
 const app = express();
 
 app.use(express.json());
@@ -45,6 +46,9 @@ app.use("/api/v1/address", addressRouter);
 
 //router for refund controller
 app.use("/api/v1/refund", refundRouter);
+
+//router for refund stats controller
+app.use("/api/v1/stats", statsRouter);
 
 module.exports = {
   app,
