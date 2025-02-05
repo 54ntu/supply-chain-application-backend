@@ -16,9 +16,7 @@ class ShipmentController {
       }
 
       //fetch the shipment details
-      const shipmentDetails = await Shipment.aggr({
-        distributorId: distributorId,
-      });
+      const shipmentDetails = await Shipment.find({ distributorId });
 
       // return res.json(shipmentDetails);
       if (shipmentDetails.length === 0) {
@@ -30,7 +28,7 @@ class ShipmentController {
       return res
         .status(200)
         .json(
-          new ApiResponse(200, shipmentDetails, "data fetched successfully")
+          new ApiResponse(200, shipmentDetails[0], "data fetched successfully")
         );
     } catch (error) {
       return res.status(500).json({
@@ -165,9 +163,7 @@ class ShipmentController {
     });
   }
 
-  static async updateshipmentStatus(req,res){
-    
-  }
+  static async updateshipmentStatus(req, res) {}
 }
 
 module.exports = {

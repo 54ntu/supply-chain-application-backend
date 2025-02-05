@@ -15,9 +15,16 @@ const { statsRouter } = require("./src/routes/refundStats.routes");
 const { shipmentRouter } = require("./src/routes/shipment.routes");
 const app = express();
 
+const corsOptions = {
+  origin: ["*"], // Allowed domains
+  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+  allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+  credentials: true, // Allow cookies and authentication
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 app.use(express.static("public")); // this middleware helps to handle the image file
 app.use(cookieParser());
 
