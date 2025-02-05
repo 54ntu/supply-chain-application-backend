@@ -11,6 +11,10 @@ orderRouter
 orderRouter
   .route("/:id")
   .get(UserMiddleware.isUserLoggedIn, OrderController.getOrderByid)
-  .patch(UserMiddleware.isUserLoggedIn, OrderController.updateOrder);
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    OrderController.updateOrder
+  );
 
 module.exports = { orderRouter };

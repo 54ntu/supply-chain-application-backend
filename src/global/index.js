@@ -39,6 +39,11 @@ const refundRequest = {
   REJECTED: "REJECTED",
 };
 
+const shipmentMethods = {
+  ROAD: "ROAD",
+  AIR: "AIR",
+};
+
 module.exports = {
   UserRole,
   shippingMethod,
@@ -46,4 +51,5 @@ module.exports = {
   orderStatus,
   paymentStatus,
   refundRequest,
+  shipmentMethods,
 };
