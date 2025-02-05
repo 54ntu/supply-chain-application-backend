@@ -14,6 +14,9 @@ const { refundRouter } = require("./src/routes/refund.route");
 const { statsRouter } = require("./src/routes/refundStats.routes");
 const { shipmentRouter } = require("./src/routes/shipment.routes");
 const { inventoryRouter } = require("./src/routes/inventory.route");
+const {
+  performanceRouter,
+} = require("./src/routes/shipmentPerformance.routes");
 const app = express();
 
 const corsOptions = {
@@ -64,6 +67,7 @@ app.use("/api/v1/stats", statsRouter);
 
 //shipment router
 app.use("/api/v1/shipment", shipmentRouter);
+app.use("/api/v1/performance", performanceRouter);
 
 //inventory router
 app.use("/api/v1/inventory", inventoryRouter);

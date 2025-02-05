@@ -19,6 +19,14 @@ shipmentRouter
     ShipmentController.getShipmentDataById
   );
 
+// shipmentRouter
+//   .route("/performance")
+//   .get(
+//     UserMiddleware.isUserLoggedIn,
+//     UserMiddleware.isDistributor,
+//     ShipmentController.getShipmentPerformance
+//   );
+
 module.exports = {
   shipmentRouter,
 };
