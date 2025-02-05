@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
-const { orderStatus, paymentStatus } = require("../global/index");
+const {
+  orderStatus,
+  paymentStatus,
+  shipmentMethods,
+} = require("../global/index");
 
 const orderSchema = new mongoose.Schema(
   {
@@ -22,6 +26,15 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+    shippingMethod: {
+      type: String,
+      enum: [
+        shipmentMethods.EXPRESS,
+        shipmentMethods.SAMEDAY,
+        shipmentMethods.STANDARD,
+      ],
+      default: shipmentMethods.STANDARD,
     },
     tax: {
       type: Number,
@@ -51,6 +64,8 @@ const orderSchema = new mongoose.Schema(
         orderStatus.DELIVERED,
         orderStatus.PENDING,
         orderStatus.SHIPPED,
+        orderStatus.INTRANSIT,
+        orderStatus.PROCESSING,
       ],
       default: orderStatus.PENDING,
     },

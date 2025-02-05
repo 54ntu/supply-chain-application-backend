@@ -7,6 +7,8 @@ const { ApiResponse } = require("../services/ApiResponse");
 const { isValidObjectId } = require("mongoose");
 const { ShippingDetail } = require("../models/address.models");
 const { default: mongoose } = require("mongoose");
+const { orderStatus, shipmentMethods } = require("../global");
+const { Shipment } = require("../models/shipment.models");
 class OrderController {
   static async createOrder(req, res) {
     //get the salesperson id from req.user as salesperson neeed to be logged in to create order
@@ -38,6 +40,7 @@ class OrderController {
         tax,
         order_status,
         payment_status,
+        shippingMethod,
         orderItems,
       } = req.body;
       if (!customerId || !orderItems) {
@@ -102,6 +105,7 @@ class OrderController {
         customer: customerId,
         discount,
         shipping_charge,
+        shippingMethod,
         tax,
         order_status,
         payment_status,
@@ -370,10 +374,10 @@ class OrderController {
 
   static async updateOrder(req, res) {
     //get the orderid from the req.params
-    //get the salespersonid from the req.user
+    //get the distributor id from the req.user
     try {
       const { id } = req.params;
-      const salespersonId = req.user._id;
+      const distributorid = req.user._id;
 
       if (!isValidObjectId(id)) {
         return res.status(400).json({
@@ -382,15 +386,15 @@ class OrderController {
         });
       }
 
-      if (!salespersonId) {
+      if (!distributorid) {
         return res.status(400).json({
           success: false,
-          message: "salespersonid is required..",
+          message: "distributorid is required..",
         });
       }
 
       //get the data from the req.body
-      const { order_status, payment_status } = req.body;
+      const { order_status, payment_status, shippingMethod } = req.body;
 
       if (!order_status || !payment_status) {
         return res.status(400).json({
@@ -399,28 +403,87 @@ class OrderController {
         });
       }
 
-      //check the order on the basis of order id salespersonid
-      const order = await Order.findOne({
-        _id: id,
-        salesPerson: salespersonId,
-      });
-      // console.log(order);
-      if (!order) {
+      //we are applying this aggregation because we donot have direct distributor id access
+      //i want that only the legit distributor can perform this operation
+      const order = await Order.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
+          },
+        },
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salesPerson",
+            foreignField: "_id",
+            as: "salespersonDetails",
+          },
+        },
+        {
+          $unwind: "$salespersonDetails",
+        },
+        {
+          $match: {
+            "salespersonDetails.distributor": new mongoose.Types.ObjectId(
+              distributorid
+            ),
+          },
+        },
+      ]);
+
+      //verify order
+      if (!order || order.length === 0) {
         return res.status(404).json({
-          success: false,
-          message: "order with the given id not available",
+          message: "order data not found or unauthorized access",
         });
       }
 
-      //if order is found then update the order_status and payment_status //assumming that these two fields are needed to update
-      order.order_status = order_status;
-      order.payment_status = payment_status;
-      await order.save(); //save the data
+      //find the order by orderid and update the status
+      const updatedOrder = await Order.findByIdAndUpdate(
+        id,
+        {
+          order_status,
+          payment_status,
+        },
+        {
+          new: true,
+        }
+      );
+
+      // Generate tracking number
+      const trackingNumber = `TRK-${Date.now()}-${Math.floor(
+        Math.random() * 10000
+      )}`;
+
+      //add checks and logic for creating estimatedDelivery
+      let estimatedDelivery = new Date();
+      if (updatedOrder.shippingMethod === shipmentMethods.EXPRESS) {
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 2); //2 days
+      } else if (updatedOrder.shippingMethod === shipmentMethods.SAMEDAY) {
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 12); //12 hours
+      } else {
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 5); //5days
+      }
+
+      // console.log(updatedOrder);
+      //check order status and if orderstatus is confirmed then create shipment
+      if (updatedOrder.order_status == orderStatus.CONFIRMED) {
+        const shipment = await Shipment.create({
+          orderId: updatedOrder._id,
+          distributorId: distributorid,
+          shippingAddress: updatedOrder.shippingAddress,
+          shippingMethod: updatedOrder.shippingMethod,
+          trackingNumber: trackingNumber,
+          shippingcost: updatedOrder.shipping_charge,
+          estimatedDelivery: estimatedDelivery,
+        });
+      }
 
       return res.status(200).json({
         success: true,
-        order,
-        message: "order with the given id is updated successfully.!",
+        updatedOrder,
+        message:
+          "order with the given id is updated and shipment is created successfully.!",
       });
     } catch (error) {
       return res.status(500).json({

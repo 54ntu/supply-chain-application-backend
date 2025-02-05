@@ -21,7 +21,9 @@ const Province = {
 const orderStatus = {
   PENDING: "PENDING",
   CONFIRMED: "CONFIRMED",
+  PROCESSING: "PROCESSING",
   SHIPPED: "SHIPPED",
+  INTRANSIT: "INTRANSIT",
   DELIVERED: "DELIVERED",
   CANCELLED: "CANCELLED",
 };
@@ -40,8 +42,9 @@ const refundRequest = {
 };
 
 const shipmentMethods = {
-  ROAD: "ROAD",
-  AIR: "AIR",
+  STANDARD: "STANDARD",
+  EXPRESS: "EXPRESS",
+  SAMEDAY: "SAME DAY",
 };
 
 module.exports = {

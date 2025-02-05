@@ -20,8 +20,6 @@ const shipmentSchema = new mongoose.Schema(
     },
     shippingMethod: {
       type: String,
-      enum: [shipmentMethods.AIR, shipmentMethods.ROAD],
-      default: shipmentMethods.ROAD,
     },
     trackingNumber: {
       type: String,
@@ -35,10 +33,17 @@ const shipmentSchema = new mongoose.Schema(
         orderStatus.DELIVERED,
         orderStatus.PENDING,
         orderStatus.SHIPPED,
+        orderStatus.INTRANSIT,
+        orderStatus.PROCESSING,
       ],
       default: orderStatus.PENDING,
     },
-    shippedDate: { type: Date },
+    shippingcost: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    dispatchedDat: { type: Date },
     estimatedDelivery: { type: Date },
     deliveredDate: { type: Date },
   },
