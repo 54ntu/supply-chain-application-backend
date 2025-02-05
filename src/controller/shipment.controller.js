@@ -1,6 +1,7 @@
 const { isValidObjectId, default: mongoose } = require("mongoose");
 const { Shipment } = require("../models/shipment.models");
 const { ApiResponse } = require("../services/ApiResponse");
+const { shipmentMethods, orderStatus } = require("../global");
 class ShipmentController {
   static async getShipmentdata(req, res) {
     //get the distributor id from req.user
@@ -130,6 +131,42 @@ class ShipmentController {
           "shipment details fecthed successfully"
         )
       );
+  }
+
+  static async getShipmentPerformance(req, res) {
+    const currentYear = new Date().getFullYear();
+    const previouseYear = currentYear - 1;
+
+    // Define date ranges
+    const currentYearStart = new Date(currentYear, 0, 1);
+    const currentYearEnd = new Date(currentYear, 11, 31, 23, 59, 59);
+    const previousYearStart = new Date(previousYear, 0, 1);
+    const previousYearEnd = new Date(previousYear, 11, 31, 23, 59, 59);
+
+    const totalShipmentsCurrentYear = await Shipment.countDocuments({
+      createdAt: { $gte: currentYearStart, $lte: currentYearEnd },
+    });
+
+    const totalShipmentsPreviousYear = await Shipment.countDocuments({
+      createdAt: { $gte: previousYearStart, $lte: previousYearEnd },
+    });
+
+    // Fetch successful (on-time) deliveries
+    const onTimeDeliveriesCurrentYear = await Shipment.countDocuments({
+      status: orderStatus.DELIVERED,
+      deliveredDate: { $lte: "$estimatedDelivery" },
+      createdAt: { $gte: currentYearStart, $lte: currentYearEnd },
+    });
+
+    const onTimeDeliveriesPreviousYear = await Shipment.countDocuments({
+      status: orderStatus.DELIVERED,
+      deliveredDate: { $lte: "$estimatedDelivery" },
+      createdAt: { $gte: previousYearStart, $lte: previousYearEnd },
+    });
+  }
+
+  static async updateshipmentStatus(req,res){
+    
   }
 }
 

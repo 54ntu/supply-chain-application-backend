@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const { distributorRouter } = require("./src/routes/distributor.routes");
 const { salesPersonRouter } = require("./src/routes/salesperson.routes");
 const { categoryRouter } = require("./src/routes/category.routes");
@@ -17,6 +18,8 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use(express.static("public")); // this middleware helps to handle the image file
+app.use(cookieParser());
 
 //route for distributor
 app.use("/api/v1/distributor", distributorRouter);

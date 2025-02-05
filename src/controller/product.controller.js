@@ -31,11 +31,11 @@ class ProductController {
       }
 
       const productImage = req.file?.filename;
-      // if (!productImage) {
-      //   return res.status(400).json({
-      //     message: "product image is not found..!!",
-      //   });
-      // }
+      if (!productImage) {
+        return res.status(400).json({
+          message: "product image is not found..!!",
+        });
+      }
 
       //get the data from the req.body
       const {
@@ -183,6 +183,11 @@ class ProductController {
         return res.status(404).json({ message: "products not found" });
       }
 
+      for (let product of products) {
+        // console.log(product);
+        product.product_image =
+          "http://localhost:8000/" + product.product_image;
+      }
       return res
         .status(200)
         .json(
@@ -244,6 +249,9 @@ class ProductController {
             restock_threshold: 1,
             total_stock: 1,
             variants: 1,
+            product_image: {
+              $concat: ["http://localhost:8000/", "$product_image"],
+            },
           },
         },
       ]);
