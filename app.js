@@ -13,6 +13,7 @@ const { addressRouter } = require("./src/routes/address.routes");
 const { refundRouter } = require("./src/routes/refund.route");
 const { statsRouter } = require("./src/routes/refundStats.routes");
 const { shipmentRouter } = require("./src/routes/shipment.routes");
+const { inventoryRouter } = require("./src/routes/inventory.route");
 const app = express();
 
 const corsOptions = {
@@ -63,6 +64,9 @@ app.use("/api/v1/stats", statsRouter);
 
 //shipment router
 app.use("/api/v1/shipment", shipmentRouter);
+
+//inventory router
+app.use("/api/v1/inventory", inventoryRouter);
 
 module.exports = {
   app,
