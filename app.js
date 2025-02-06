@@ -11,13 +11,13 @@ const { orderRouter } = require("./src/routes/order.routes");
 const { notificationRouter } = require("./src/routes/notification.routes");
 const { addressRouter } = require("./src/routes/address.routes");
 const { refundRouter } = require("./src/routes/refund.route");
-const { statsRouter } = require("./src/routes/refundStats.routes");
 const { shipmentRouter } = require("./src/routes/shipment.routes");
 const { inventoryRouter } = require("./src/routes/inventory.route");
 const {
   performanceRouter,
 } = require("./src/routes/shipmentPerformance.routes");
 const { dashboardRouter } = require("./src/routes/dashboard.routes");
+const { statsRouter } = require("./src/routes/refundstatistics.route");
 const app = express();
 
 const corsOptions = {

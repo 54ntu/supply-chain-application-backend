@@ -3,7 +3,7 @@ const { Refund } = require("../models/returnRefund.models");
 const { ApiResponse } = require("../services/ApiResponse");
 
 class RefundStatistics {
-  static async getRefundStats(req, res) {
+  static async  getRefundStats(req, res) {
     // console.log("moh yeta puge hoi");
 
     try {
