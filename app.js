@@ -18,6 +18,7 @@ const {
 } = require("./src/routes/shipmentPerformance.routes");
 const { dashboardRouter } = require("./src/routes/dashboard.routes");
 const { statsRouter } = require("./src/routes/refundstatistics.route");
+const { chatbotRouter } = require("./src/routes/chatbot.routes");
 const app = express();
 
 const corsOptions = {
@@ -79,6 +80,9 @@ app.use("/api/v1/inventory", inventoryRouter);
 
 //dashboard router
 app.use("/api/v1/dashboard", dashboardRouter);
+
+//chatbot router
+app.use("/api/v1/chatbot", chatbotRouter);
 
 module.exports = {
   app,

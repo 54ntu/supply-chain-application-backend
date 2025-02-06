@@ -84,6 +84,8 @@ class ChatbotService {
 
   // Function to process incoming messages
   processMessage(message) {
+    console.log("process message tira hoii");
+    console.log(typeof message);
     const normalizedMessage = message.toLowerCase();
     const matchedIntent = this.matchIntent(normalizedMessage);
 
@@ -98,7 +100,9 @@ class ChatbotService {
 
   // Function to match the message to the most relevant intent
   matchIntent(message) {
-    for (const intentKey in this.intents) {
+    console.log(`matchintent : ${message}`);
+    for (let intentKey in this.intents) {
+      console.log(`intentKey : ${intentKey}`);
       const intent = this.intents[intentKey];
       const keywordMatches = intent.keywords.filter((keyword) =>
         message.includes(keyword)
@@ -112,7 +116,7 @@ class ChatbotService {
   }
 
   // Future expandability: Add new intents dynamically
-  addIntent(intentName, keywords, responseFunction) {
+  static addIntent(intentName, keywords, responseFunction) {
     this.intents[intentName] = {
       keywords: keywords,
       response: responseFunction,
