@@ -19,16 +19,17 @@ const {
 const { dashboardRouter } = require("./src/routes/dashboard.routes");
 const { statsRouter } = require("./src/routes/refundstatistics.route");
 const { chatbotRouter } = require("./src/routes/chatbot.routes");
+const { subscriptionplanRouter } = require("./src/routes/subscription.routes");
 const app = express();
 
-const corsOptions = {
-  origin: ["*"], // Allowed domains
-  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
-  allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
-  credentials: true, // Allow cookies and authentication
-};
+// const corsOptions = {
+//   origin: ["*"], // Allowed domains
+//   methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+//   allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+//   credentials: true, // Allow cookies and authentication
+// };
 
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public")); // this middleware helps to handle the image file
@@ -83,6 +84,9 @@ app.use("/api/v1/dashboard", dashboardRouter);
 
 //chatbot router
 app.use("/api/v1/chatbot", chatbotRouter);
+
+//subscription plam router
+app.use("/api/v1/subscriptionplan", subscriptionplanRouter);
 
 module.exports = {
   app,
