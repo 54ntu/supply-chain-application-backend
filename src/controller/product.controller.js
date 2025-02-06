@@ -4,6 +4,7 @@ const { generateSKU } = require("../services/generateSKU");
 const { Variant } = require("../models/variants.models");
 const { ApiResponse } = require("../services/ApiResponse");
 const { isValidObjectId, default: mongoose } = require("mongoose");
+const { envConfig } = require("../config/config");
 class ProductController {
   static async addProduct(req, res) {
     //get the distributor id from the req.user.id
@@ -207,7 +208,7 @@ class ProductController {
             FKU: 1,
             product_name: 1,
             product_image: {
-              $concat: ["http://localhost:8000/", "$product_image"],
+              $concat: [envConfig.base_url, "$product_image"],
             },
             categoryName: "$categoryDetail.category_name",
             price: "$variantDetails.variant_price",
@@ -285,7 +286,7 @@ class ProductController {
             total_stock: 1,
             variants: 1,
             product_image: {
-              $concat: ["http://localhost:8000/", "$product_image"],
+              $concat: [envConfig.base_url, "$product_image"],
             },
           },
         },

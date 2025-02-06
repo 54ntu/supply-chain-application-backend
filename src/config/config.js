@@ -12,6 +12,9 @@ const envConfig = {
 
   //node environment
   node_env: process.env.NODE_ENV,
+
+  //production project url
+  base_url: process.env.PRODUCTION_BASEURL,
 };
 
 module.exports = {
