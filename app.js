@@ -33,6 +33,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public")); // this middleware helps to handle the image file
 app.use(cookieParser());
 
+app.get("/", (req, res) => {
+  res.send("hello");
+});
+
 //route for distributor
 app.use("/api/v1/distributor", distributorRouter);
 
