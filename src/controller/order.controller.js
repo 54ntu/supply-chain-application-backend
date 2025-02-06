@@ -24,12 +24,15 @@ class OrderController {
     //if below restock threshold create notification
 
     try {
-      const salespersonId = req.user._id;
+      const userid = req.user._id;
+      console.log(userid);
+      console.log(typeof userid);
       const role = req.user.role;
-      if (!salespersonId) {
+      console.log(role);
+      if (!userid) {
         return res.status(400).json({
           success: false,
-          message: "salesperson id is required",
+          message: "userid is required",
         });
       }
 
@@ -63,7 +66,7 @@ class OrderController {
         //check stock level
         if (product.total_stock < item.quantity) {
           await createNotification({
-            userId: salespersonId,
+            userId: new mongoose.Types.ObjectId(userid),
             userType: role,
             type: "stock",
             title: "low stock",
@@ -74,7 +77,7 @@ class OrderController {
         //check for restock threshold
         if (product.total_stock - item.quantity < product.restock_threshold) {
           await createNotification({
-            userId: salespersonId,
+            userId: new mongoose.Types.ObjectId(userid),
             userType: role,
             type: "stock",
             title: "Restock Reminder",
@@ -101,7 +104,7 @@ class OrderController {
 
       //create new order
       const newOrder = await Order.create({
-        salesPerson: salespersonId,
+        salesPerson: userid,
         customer: customerId,
         discount,
         shipping_charge,

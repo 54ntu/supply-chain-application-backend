@@ -239,7 +239,9 @@ class ShipmentController {
   //   }
   // }
 
-  static async updateshipmentStatus(req, res) {}
+  static async updateshipmentStatus(req, res) {
+    
+  }
 }
 
 module.exports = {

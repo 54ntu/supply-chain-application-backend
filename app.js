@@ -17,6 +17,7 @@ const { inventoryRouter } = require("./src/routes/inventory.route");
 const {
   performanceRouter,
 } = require("./src/routes/shipmentPerformance.routes");
+const { dashboardRouter } = require("./src/routes/dashboard.routes");
 const app = express();
 
 const corsOptions = {
@@ -71,6 +72,9 @@ app.use("/api/v1/performance", performanceRouter);
 
 //inventory router
 app.use("/api/v1/inventory", inventoryRouter);
+
+//dashboard router
+app.use("/api/v1/dashboard", dashboardRouter);
 
 module.exports = {
   app,
