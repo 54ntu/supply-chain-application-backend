@@ -58,6 +58,12 @@ const paymentMethod = {
   CARD: "CARD",
 };
 
+const billingCycle = {
+  MONTHLY: "billed Monthly",
+  QUARTERLY: "billed quaterly",
+  ANNUAL: "billed yearly",
+};
+
 module.exports = {
   UserRole,
   shippingMethod,
@@ -68,4 +74,5 @@ module.exports = {
   shipmentMethods,
   subscriptionType,
   paymentMethod,
+  billingCycle,
 };
