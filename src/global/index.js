@@ -47,6 +47,17 @@ const shipmentMethods = {
   SAMEDAY: "SAME DAY",
 };
 
+const subscriptionType = {
+  MONTHLY: "MONTHLY",
+  QUARTERLY: "QUARTERLY",
+  ANNUAL: "ANNUAL",
+};
+
+const paymentMethod = {
+  KHALTI: "KHALTI",
+  CARD: "CARD",
+};
+
 module.exports = {
   UserRole,
   shippingMethod,
@@ -55,4 +66,6 @@ module.exports = {
   paymentStatus,
   refundRequest,
   shipmentMethods,
+  subscriptionType,
+  paymentMethod,
 };
