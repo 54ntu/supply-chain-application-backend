@@ -6,8 +6,7 @@ const cors = require("cors");
 const { envConfig } = require("./src/config/config");
 const { connectdb } = require("./src/dbconfig/db");
 
-let port = envConfig.port || 8000;
-
+let port = envConfig.port || 4000;
 
 // const server = http.createServer(app);
 
