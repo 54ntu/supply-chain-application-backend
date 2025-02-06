@@ -22,14 +22,14 @@ const { chatbotRouter } = require("./src/routes/chatbot.routes");
 const { subscriptionplanRouter } = require("./src/routes/subscription.routes");
 const app = express();
 
-// const corsOptions = {
-//   origin: ["*"], // Allowed domains
-//   methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
-//   allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
-//   credentials: true, // Allow cookies and authentication
-// };
+const corsOptions = {
+  origin: ["http://localhost:5173"], // Allowed domains
+  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+  allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+  credentials: true, // Allow cookies and authentication
+};
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public")); // this middleware helps to handle the image file

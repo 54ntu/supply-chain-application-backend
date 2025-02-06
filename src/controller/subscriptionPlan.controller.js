@@ -69,7 +69,7 @@ class SubscriptionPlanController {
         .json(
           new ApiResponse(
             200,
-            subscriptionplans[0],
+            subscriptionplans,
             "plans data fetched successfully"
           )
         );
