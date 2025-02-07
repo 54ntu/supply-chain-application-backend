@@ -46,6 +46,7 @@ class ProductController {
         product_description,
         product_weight,
         product_price,
+        quantity,
         length,
         breadth,
         width,
@@ -133,6 +134,7 @@ class ProductController {
             await newVariant.save();
             variantArray.push(newVariant);
             totalStock += newVariant.stock; //add total stock
+
             //add variants id into the product table
             existingProduct.variants = newVariant._id;
             await existingProduct.save();
@@ -140,8 +142,14 @@ class ProductController {
         }
       }
 
+      // console.log(`total_stock  : ${quantity} and type is ${typeof quantity}`);
+
       //update the total stock of the product
-      existingProduct.total_stock += totalStock;
+      if (totalStock > 0) {
+        existingProduct.total_stock += totalStock;
+      } else {
+        existingProduct.total_stock += parseInt(quantity);
+      }
 
       //calculate min and max prices among all variants
       if (variantArray.length > 0) {
