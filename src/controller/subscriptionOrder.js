@@ -1,8 +1,9 @@
 const { Subscription } = require("../models/subscription.models");
-const { paymentMethods } = require("../global");
+const { paymentMethods, subscriptionType } = require("../global");
 const { default: axios } = require("axios");
 class SubscriptionOrderController {
   static async createSubscriptionOrder(req, res) {
+    console.log("hitt vayo hoiii");
     //get the data from the req.body
     //get the distributor id from the req.user._id
     try {
@@ -19,7 +20,8 @@ class SubscriptionOrderController {
         });
       }
 
-      let total_amount = amount - tax;
+      let total_amount = amount + tax;
+      console.log(total_amount);
       const createSubscriptOrder = await Subscription.create({
         distributorId: distributorId,
         subscriptionType,
@@ -34,7 +36,7 @@ class SubscriptionOrderController {
         const data = {
           return_url: "http://localhost:5173",
           website_url: "http://localhost:5173",
-          amount: amount * 100,
+          amount: total_amount * 100,
           purchase_order_id: createSubscriptOrder._id,
           purchase_order_name: "subscription" + createSubscriptOrder._id,
           // customer_info: billingAddress,
@@ -77,7 +79,75 @@ class SubscriptionOrderController {
   static async verifypayment(req, res) {
     //get the pidx from the req.body
     const { pidx } = req.body;
-    console.log(typeof pidx);
+    // console.log(typeof pidx);
+
+    try {
+      //send the post request to the khalti payment verification url
+      const response = await axios.post(
+        "https://dev.khalti.com/api/v2/epayment/lookup/",
+        { pidx: pidx },
+        {
+          headers: {
+            Authorization: "key f1b854113d2c424f820427cadb100265",
+          },
+        }
+      );
+      // console.log(response);
+      const khaltiresponse = response.data;
+      let durationMonths = 0;
+
+      //update the isSubscribed field in subscription to true and also update the endate of the subscription if the khaltriresponse payment status is completed
+      if (khaltiresponse.status == "Completed") {
+        const findsubscriptionByPidx = await Subscription.findOne({
+          pidx: pidx,
+        });
+        // console.log(findsubscriptionByPidx);
+
+        if (!findsubscriptionByPidx) {
+          return res.status(500).json({
+            success: false,
+            message: `subscription order of pidx ${pidx} not found`,
+          });
+        }
+
+        switch (findsubscriptionByPidx.subscriptionType) {
+          case subscriptionType.MONTHLY:
+            durationMonths = 1;
+            break;
+
+          case subscriptionType.QUARTERLY:
+            durationMonths = 3;
+            break;
+
+          case subscriptionType.ANNUAL:
+            durationMonths = 12;
+            break;
+          default:
+            throw new Error("invalid subscriptiontype");
+        }
+
+        let enddate = new Date(findsubscriptionByPidx.startDate);
+        enddate.setMonth(enddate.getMonth() + durationMonths);
+
+        findsubscriptionByPidx.isSubscribed = true;
+        findsubscriptionByPidx.endDate = enddate;
+        await findsubscriptionByPidx.save();
+
+        return res.status(200).json({
+          success: true,
+          findsubscriptionByPidx,
+        });
+      } else {
+        return res.status(400).json({
+          message: "payment is pending first pay the amount",
+        });
+      }
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "something went wrong",
+      });
+    }
   }
 }
 
