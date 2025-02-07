@@ -220,7 +220,7 @@ class UserController {
 
     //before setting the accesstoken into the cookies we need to define options
     const options = {
-      httpOnly: true,
+      // httpOnly: true,
       secure: envConfig.node_env === "production",
       sameSite: "strict",
     };
