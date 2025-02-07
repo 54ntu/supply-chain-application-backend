@@ -227,6 +227,7 @@ class UserController {
 
     return res.status(200).cookie("accessToken", accessToken, options).json({
       message: "user logged in successfully",
+      accessToken,
     });
   }
 
