@@ -20,6 +20,9 @@ const { dashboardRouter } = require("./src/routes/dashboard.routes");
 const { statsRouter } = require("./src/routes/refundstatistics.route");
 const { chatbotRouter } = require("./src/routes/chatbot.routes");
 const { subscriptionplanRouter } = require("./src/routes/subscription.routes");
+const {
+  subscriptionOrderRouter,
+} = require("./src/routes/subscriptionOrder.routes");
 const app = express();
 
 const corsOptions = {
@@ -87,6 +90,9 @@ app.use("/api/v1/chatbot", chatbotRouter);
 
 //subscription plam router
 app.use("/api/v1/subscriptionplan", subscriptionplanRouter);
+
+//subscription order router
+app.use("/api/v1/orderSubs", subscriptionOrderRouter);
 
 module.exports = {
   app,

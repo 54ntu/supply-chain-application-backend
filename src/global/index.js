@@ -53,14 +53,14 @@ const subscriptionType = {
   ANNUAL: "ANNUAL",
 };
 
-const paymentMethod = {
+const paymentMethods = {
   KHALTI: "KHALTI",
   CARD: "CARD",
 };
 
 const billingCycle = {
   MONTHLY: "billed Monthly",
-  QUARTERLY: "billed quaterly",
+  QUARTERLY: "billed quarterly",
   ANNUAL: "billed yearly",
 };
 
@@ -73,6 +73,6 @@ module.exports = {
   refundRequest,
   shipmentMethods,
   subscriptionType,
-  paymentMethod,
+  paymentMethods,
   billingCycle,
 };

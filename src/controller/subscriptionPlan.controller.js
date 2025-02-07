@@ -6,7 +6,7 @@ class SubscriptionPlanController {
   static async addSubscriptionPlan(req, res) {
     //get the data from the req.body
     try {
-      const { type, price, billingCycle, trialdays } = req.body;
+      const { type, price, billingCycle, trialdays, tax } = req.body;
       if (!type || !price || !billingCycle || !trialdays) {
         return res.status(400).json({
           success: false,
@@ -15,7 +15,8 @@ class SubscriptionPlanController {
       }
 
       //check whether the type of plan is already exist or not
-      const isPlanExist = await SubscriptionPlan.find({ type: type });
+      const isPlanExist = await SubscriptionPlan.findOne({ type: type });
+      //   console.log(isPlanExist);
       if (isPlanExist) {
         return res.status(400).json({
           success: false,
@@ -29,6 +30,7 @@ class SubscriptionPlanController {
         price,
         billingCycle,
         trialdays,
+        tax,
       });
 
       // console.log(subscriptionplancreated);
@@ -114,8 +116,8 @@ class SubscriptionPlanController {
   static async updateSubscriptionPlan(req, res) {
     //get the data from the req.body
     try {
-      const { type, price, trialdays } = req.body;
-      if (!type || !price || !trialdays) {
+      const { type, price, trialdays, tax } = req.body;
+      if (!type || !price || !trialdays || !tax) {
         return res.status(400).json({
           success: false,
           message: "all fields are required",
@@ -137,6 +139,7 @@ class SubscriptionPlanController {
 
       isPlanExist.price = price;
       isPlanExist.trialdays = trialdays;
+      isPlanExist.tax = tax;
       await isPlanExist.save();
 
       return res.status(200).json({

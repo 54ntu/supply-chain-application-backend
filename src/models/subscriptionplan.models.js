@@ -20,6 +20,10 @@ const subscriptionPlanSchema = new mongoose.Schema({
     enum: [billingCycle.QUARTERLY, billingCycle.MONTHLY, billingCycle.ANNUAL],
     required: true,
   },
+  tax: {
+    type: Number,
+    default: 10,
+  },
   trialdays: {
     type: Number,
     default: 0,
