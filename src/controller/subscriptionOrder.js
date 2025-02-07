@@ -1,5 +1,6 @@
 const { Subscription } = require("../models/subscription.models");
 const { paymentMethods, subscriptionType } = require("../global");
+const { ApiResponse } = require("../services/ApiResponse");
 const { default: axios } = require("axios");
 class SubscriptionOrderController {
   static async createSubscriptionOrder(req, res) {
@@ -152,16 +153,43 @@ class SubscriptionOrderController {
 
   static async getCurrentPlan(req, res) {
     //logged in hunuparyo distributor or salesperson
-    const distributorid = req.user._id;
-    if (!distributorid) {
-      return res.status(400).json({
+    try {
+      const distributorid = req.user._id;
+      if (!distributorid) {
+        return res.status(400).json({
+          success: false,
+          message: "user id is required",
+        });
+      }
+
+      //fetch the data from the subscription model comparing distributor id and isSubscribed status
+      const currentPlan = await Subscription.findOne({
+        distributorId: distributorid,
+        isSubscribed: true,
+      });
+
+      if (!currentPlan) {
+        return res.status(404).json({
+          success: false,
+          message: "current plan data fetched successfully",
+        });
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            currentPlan,
+            "current plan data fetched successfully"
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
         success: false,
-        message: "user id is required",
+        message: "something went wrong",
       });
     }
-
-    //fetch the data from the subscription model comparing distributor id and isSubscribed status
-    const currentPlan = await Subscription.findOne({ distributorId });
   }
 }
 

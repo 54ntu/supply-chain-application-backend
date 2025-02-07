@@ -27,7 +27,7 @@ const app = express();
 
 const corsOptions = {
   origin: ["http://localhost:5173"], // Allowed domains
-  methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE", // Allowed HTTP methods
   allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
   credentials: true, // Allow cookies and authentication
 };
@@ -35,7 +35,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public")); // this middleware helps to handle the image file
+app.use(express.static("./src/public")); // this middleware helps to handle the image file
 app.use(cookieParser());
 
 app.get("/", (req, res) => {

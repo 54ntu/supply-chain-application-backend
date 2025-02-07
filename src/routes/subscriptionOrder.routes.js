@@ -20,6 +20,14 @@ subscriptionOrderRouter
     SubscriptionOrderController.verifypayment
   );
 
+subscriptionOrderRouter
+  .route("/")
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    SubscriptionOrderController.getCurrentPlan
+  );
+
 module.exports = {
   subscriptionOrderRouter,
 };

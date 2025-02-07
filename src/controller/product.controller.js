@@ -32,6 +32,7 @@ class ProductController {
       }
 
       const productImage = req.file?.filename;
+      // console.log(productImage);
       if (!productImage) {
         return res.status(400).json({
           message: "product image is not found..!!",
@@ -60,8 +61,7 @@ class ProductController {
         !product_weight ||
         !length ||
         !breadth ||
-        !width ||
-        !variants
+        !width
       ) {
         return res.status(400).json({ message: "All fields are required" });
       }
@@ -87,7 +87,7 @@ class ProductController {
           product_description,
           product_weight,
           product_price,
-          product_image: productImage,
+          // product_image: productImage,
           FKU,
           length,
           breadth,
@@ -98,6 +98,7 @@ class ProductController {
           max_price: 0, //will be calculated automatically once the variants added
         });
 
+        existingProduct.product_image = productImage;
         await existingProduct.save();
       }
 
@@ -177,9 +178,16 @@ class ProductController {
   static async viewAllProduct(req, res) {
     //simply send the get request
     //return the response
+    const distributorid = req.user._id;
 
+    // console.log(envConfig.base_url);
     try {
       const products = await Product.aggregate([
+        {
+          $match: {
+            distributorId: new mongoose.Types.ObjectId(distributorid),
+          },
+        },
         {
           $lookup: {
             from: "categories",
@@ -191,7 +199,7 @@ class ProductController {
         {
           $unwind: "$categoryDetail",
         },
-        //for variants data
+        // //for variants data
         {
           $lookup: {
             from: "variants",
@@ -201,7 +209,10 @@ class ProductController {
           },
         },
         {
-          $unwind: "$variantDetails",
+          $unwind: {
+            path: "$variantDetails",
+            preserveNullAndEmptyArrays: true, //keep documents even when "variantdetails" is empty
+          },
         },
         {
           $project: {
