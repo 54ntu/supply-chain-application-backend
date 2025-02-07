@@ -149,6 +149,20 @@ class SubscriptionOrderController {
       });
     }
   }
+
+  static async getCurrentPlan(req, res) {
+    //logged in hunuparyo distributor or salesperson
+    const distributorid = req.user._id;
+    if (!distributorid) {
+      return res.status(400).json({
+        success: false,
+        message: "user id is required",
+      });
+    }
+
+    //fetch the data from the subscription model comparing distributor id and isSubscribed status
+    const currentPlan = await Subscription.findOne({ distributorId });
+  }
 }
 
 module.exports = {
