@@ -29,7 +29,7 @@ const { UserMiddleware } = require("./src/middleware/auth.middleware");
 const app = express();
 
 const corsOptions = {
-  origin: ["*"], // Allowed domains
+  origin: ["https://scala-supply-chain-management.netlify.app"], // Allowed domains
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE", // Allowed HTTP methods
   allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
   credentials: true, // Allow cookies and authentication
