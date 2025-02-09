@@ -13,6 +13,13 @@ distributorRouter
   .route("/logout")
   .post(UserMiddleware.isUserLoggedIn, UserController.logout);
 
+distributorRouter
+  .route("/forgot-password")
+  .post(UserController.handleForgotPassword);
+
+distributorRouter.route("/reset-link").post(UserController.verifyResetLink);
+distributorRouter.route("/resetPassword").post(UserController.resetPassword);
+
 module.exports = {
   distributorRouter,
 };

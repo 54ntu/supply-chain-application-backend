@@ -350,10 +350,10 @@ class UserController {
     }
   }
 
-  static async restPassword(req, res) {
+  static async resetPassword(req, res) {
     try {
       const { email, password, confirmPassword } = req.body;
-      if (!email || !passowrd || !confirmPassword) {
+      if (!email || !password || !confirmPassword) {
         return res.status(400).json({
           error: "all fields are required..!!",
         });
