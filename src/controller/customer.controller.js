@@ -83,6 +83,7 @@ class CustomerController {
         phone,
         preferredShippingMethod,
         storeName,
+        isActive: true,
         address,
         salespersonId,
         distributorId: distributorid,
@@ -297,6 +298,54 @@ class CustomerController {
           "customer data updated successfully"
         )
       );
+  }
+
+  static async getcustomerSummary(req, res) {
+    // console.log("moh yeta customer tira xu hoi");
+    const userid = req.user._id; //it is distributor id
+    if (!userid) {
+      return res.status(400).json({
+        success: false,
+        message: "valid userid is required",
+      });
+    }
+
+    0;
+    const customers = await Customer.aggregate([
+      {
+        $match: {
+          distributorId: new mongoose.Types.ObjectId(userid),
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalCustomer: { $sum: 1 },
+          activeCutomer: {
+            $sum: {
+              $cond: [{ $eq: ["$isActive", true] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]);
+    // console.log(customers);
+
+    let totalCustomer = customers[0].totalCustomer;
+    let activeCustomer = customers[0].activeCutomer;
+
+    // console.log(totalCustomer);
+    // console.log(activeCustomer);
+
+    const activeCustomerPercentage = (activeCustomer / totalCustomer) * 100;
+    // console.log(activeCustomerPercentage);
+
+    return res.status(200).json({
+      success: true,
+      message: "customer summary fetched successfully",
+      totalCustomer,
+      activeCustomerPercentage,
+    });
   }
 }
 

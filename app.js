@@ -24,6 +24,8 @@ const {
   subscriptionOrderRouter,
 } = require("./src/routes/subscriptionOrder.routes");
 const { OrderController } = require("./src/controller/order.controller");
+const { CustomerController } = require("./src/controller/customer.controller");
+const { UserMiddleware } = require("./src/middleware/auth.middleware");
 const app = express();
 
 const corsOptions = {
@@ -57,6 +59,14 @@ app.use("/api/v1/product", productRouter);
 
 //routes for customer controller
 app.use("/api/v1/customer", customerRouter);
+
+//routes for customer summary
+app.get(
+  "/api/v1/customer-summary",
+  UserMiddleware.isUserLoggedIn,
+  UserMiddleware.isDistributor,
+  CustomerController.getcustomerSummary
+);
 
 //routes for settings controller
 app.use("/api/v1/setting", settingRouter);

@@ -39,6 +39,10 @@ const customerSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       ref: "SalesPerson",
     },
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
