@@ -17,15 +17,18 @@ productRouter
 productRouter
   .route("/:id")
   .get(ProductController.viewProductById)
-  .patch(
-    UserMiddleware.isUserLoggedIn,
-    UserMiddleware.isDistributor,
-    ProductController.updateProduct
-  )
   .delete(
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
     ProductController.deleteProduct
+  );
+
+productRouter
+  .route("/:id")
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    ProductController.updateProduct
   );
 
 module.exports = productRouter;

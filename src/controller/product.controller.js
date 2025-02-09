@@ -239,7 +239,7 @@ class ProductController {
       if (!products || products.length === 0) {
         return res.status(404).json({
           success: false,
-          message: "product data fetched successfully",
+          message: "error fetching the product data",
         });
       }
       return res
@@ -392,6 +392,7 @@ class ProductController {
     //find the product by id and distributor id
     //update the product data
     //return response
+    console.log("moh yeta update product tira xu hoiii");
 
     try {
       const { id } = req.params;
@@ -416,12 +417,15 @@ class ProductController {
         product_description,
         product_weight,
         product_price,
+        quantity,
         length,
         breadth,
         width,
         restock_threshold,
         variants, //variants will be the array of attributes of the product
       } = req.body;
+
+      console.log(req.body);
 
       //validate all the required fields
       if (
@@ -432,8 +436,7 @@ class ProductController {
         !product_price ||
         !length ||
         !breadth ||
-        !width ||
-        !variants
+        !width
       ) {
         return res.status(400).json({ message: "All fields are required" });
       }
@@ -448,13 +451,15 @@ class ProductController {
           .json({ message: "product with the given id not found" });
       }
 
+      // console.log(typeof )
       //if product found then check whether authorized user or not
-      if (product.distributorId.toString != distributorid) {
+      if (product.distributorId.toString() != distributorid) {
         return res.status(403).json({
           error: "this product does not belongs to you😡😡😡😡🤬🤬",
         });
       }
 
+      console.log(quantity);
       //update the product data
       product.category = category;
       product.product_name = product_name;
@@ -465,6 +470,7 @@ class ProductController {
       product.length = length;
       product.breadth = breadth;
       product.width = width;
+      product.total_stock += quantity || 0;
       product.restock_threshold = restock_threshold;
 
       await product.save();

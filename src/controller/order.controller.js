@@ -25,7 +25,7 @@ class OrderController {
 
     try {
       const userid = req.user._id;
-      console.log(userid);
+      // console.log(userid);
       console.log(typeof userid);
       const role = req.user.role;
       console.log(role);
@@ -46,6 +46,7 @@ class OrderController {
         shippingMethod,
         orderItems,
       } = req.body;
+
       if (!customerId || !orderItems) {
         return res.status(400).json({
           success: false,
@@ -91,6 +92,7 @@ class OrderController {
         //calculate the total quantity
         total_quantity += item.quantity;
       }
+      
       total_amount = subtotal + shipping_charge + tax - discount;
       // console.log(total_quantity);
 
@@ -104,8 +106,8 @@ class OrderController {
 
       //create new order
       const newOrder = await Order.create({
-        salesPerson: userid,
-        customer: customerId,
+        salesPerson: new mongoose.Types.ObjectId(userid),
+        customer:customerId,
         discount,
         shipping_charge,
         shippingMethod,
