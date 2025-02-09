@@ -29,7 +29,7 @@ const { UserMiddleware } = require("./src/middleware/auth.middleware");
 const app = express();
 
 const corsOptions = {
-  origin: ["http://localhost:5173"], // Allowed domains
+  origin: ["*"], // Allowed domains
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE", // Allowed HTTP methods
   allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
   credentials: true, // Allow cookies and authentication
