@@ -23,6 +23,7 @@ const { subscriptionplanRouter } = require("./src/routes/subscription.routes");
 const {
   subscriptionOrderRouter,
 } = require("./src/routes/subscriptionOrder.routes");
+const { OrderController } = require("./src/controller/order.controller");
 const app = express();
 
 const corsOptions = {
@@ -65,6 +66,9 @@ app.use("/api/v1/notification", notificationRouter);
 
 //route for order controller
 app.use("/api/v1/order", orderRouter);
+
+//route for order stats
+app.get("/api/v1/order-stats", OrderController.getOrderSummary);
 
 //router for address controller
 app.use("/api/v1/address", addressRouter);

@@ -9,6 +9,7 @@ const { ShippingDetail } = require("../models/address.models");
 const { default: mongoose } = require("mongoose");
 const { orderStatus, shipmentMethods } = require("../global");
 const { Shipment } = require("../models/shipment.models");
+const { getWeekRange } = require("../services/getWeekRange");
 class OrderController {
   static async createOrder(req, res) {
     //get the salesperson id from req.user as salesperson neeed to be logged in to create order
@@ -24,15 +25,14 @@ class OrderController {
     //if below restock threshold create notification
 
     try {
-      const userid = req.user._id;
-      // console.log(userid);
-      console.log(typeof userid);
-      const role = req.user.role;
-      console.log(role);
-      if (!userid) {
+      const salespersonId = req.user._id;
+      console.log(salespersonId);
+      console.log(req.user.role);
+
+      if (!salespersonId) {
         return res.status(400).json({
           success: false,
-          message: "userid is required",
+          message: "salespersonId is required",
         });
       }
 
@@ -67,19 +67,23 @@ class OrderController {
         //check stock level
         if (product.total_stock < item.quantity) {
           await createNotification({
-            userId: new mongoose.Types.ObjectId(userid),
-            userType: role,
+            userId: salespersonId,
             type: "stock",
             title: "low stock",
             message: `not enough stock for ${product.product_name}. Only ${product.total_stock}left `,
+          });
+
+          return res.status(400).json({
+            success: false,
+            message:
+              "insufficient stock ...notification has been created successfully",
           });
         }
 
         //check for restock threshold
         if (product.total_stock - item.quantity < product.restock_threshold) {
           await createNotification({
-            userId: new mongoose.Types.ObjectId(userid),
-            userType: role,
+            userId: salespersonId,
             type: "stock",
             title: "Restock Reminder",
             message: `product ${product.product_name} ${product.FKU} has dropped below the threshold`,
@@ -92,7 +96,7 @@ class OrderController {
         //calculate the total quantity
         total_quantity += item.quantity;
       }
-      
+
       total_amount = subtotal + shipping_charge + tax - discount;
       // console.log(total_quantity);
 
@@ -106,8 +110,8 @@ class OrderController {
 
       //create new order
       const newOrder = await Order.create({
-        salesPerson: new mongoose.Types.ObjectId(userid),
-        customer:customerId,
+        salesPerson: new mongoose.Types.ObjectId(salespersonId),
+        customer: customerId,
         discount,
         shipping_charge,
         shippingMethod,
@@ -157,43 +161,59 @@ class OrderController {
           });
         }
 
-        //fetch variants data from the variant collect by comparing both variant id and product id stored in the variant collection
-        const variants = await Variant.find({
-          _id: { $in: product.variants },
-          product_id: product._id,
-        });
-        // console.log(variants);
+        //if variants is there then decrease the total stock variant wise
+        if (product.variants && product.variants.length > 0) {
+          //fetch variants data from the variant collect by comparing both variant id and product id stored in the variant collection
+          const variants = await Variant.find({
+            _id: { $in: product.variants },
+            product_id: product._id,
+          });
+          // console.log(variants);
 
-        //decrease the variant wise stock
-        for (let variant of variants) {
-          if (variant.stock >= item.quantity) {
-            variant.stock -= item.quantity; //reduce the stock of the variant
-            await variant.save();
+          //decrease the variant wise stock
+          for (let variant of variants) {
+            if (variant.stock >= item.quantity) {
+              variant.stock -= item.quantity; //reduce the stock of the variant
+              await variant.save();
+            } else {
+              await createNotification({
+                userId: salespersonId,
+                userType: role,
+                type: "stock",
+                title: "restock_alert",
+                message: `variant of id ${variant._id} has dropped below threshold`,
+              });
+            }
+          }
+
+          //recalculate the total stoc for the product
+          const updatedVariants = await Variant.find({
+            _id: { $in: product.variants },
+          });
+
+          const updatedTotalStock = updatedVariants.reduce(
+            (sum, v) => sum + v.stock,
+            0
+          );
+
+          //update the product's total stock
+          product.total_stock = updatedTotalStock;
+          await product.save();
+        } else {
+          if (product.total_stock >= item.quantity) {
+            product.total_stock -= item.quantity;
+            await product.save();
           } else {
             await createNotification({
               userId: salespersonId,
-              userType: role,
               type: "stock",
-              title: "restock_alert",
-              message: `variant of id ${variant._id} has dropped below threshold`,
+              title: "Restock Alert",
+              message: `product ${product.product_name} (ID : ${product._id}) is running low on stock`,
             });
           }
         }
-
-        //recalculate the total stoc for the product
-        const updatedVariants = await Variant.find({
-          _id: { $in: product.variants },
-        });
-
-        const updatedTotalStock = updatedVariants.reduce(
-          (sum, v) => sum + v.stock,
-          0
-        );
-
-        //update the product's total stock
-        product.total_stock = updatedTotalStock;
-        await product.save();
       }
+
       //send the response
       return res.status(201).json(
         new ApiResponse(
@@ -509,6 +529,61 @@ class OrderController {
         message: "order updation failed",
       });
     }
+  }
+
+  static async getOrderSummary(req, res) {
+    console.log("yeta hit vayo hoiii");
+    const { startOfWeek: startOfCurrentWeek } = getWeekRange(0);
+    const { startOfWeek: startOfLastWeek, endOfWeek: endOfLastWeek } =
+      getWeekRange(1);
+
+    const getCount = async (status) => ({
+      current: await Order.countDocuments({
+        status,
+        createdAt: { $gte: startOfCurrentWeek },
+      }),
+      last: await Order.countDocuments({
+        status,
+        createdAt: { $gte: startOfLastWeek, $lte: endOfLastWeek },
+      }),
+    });
+
+    const totalOrder = await getCount(null);
+    const fulfilledOrders = await getCount(orderStatus.DELIVERED);
+    const deliveredOrders = await getCount(orderStatus.DELIVERED);
+    const cancelledOrders = await getCount(orderStatus.CANCELLED);
+
+    //calculate the percentage changes
+    const getPercentageChange = (current, last) =>
+      last ? (((current - last) / last) * 100).toFixed(2) : 100;
+
+    return res.json({
+      totalOrders: {
+        count: totalOrder.current,
+        change: getPercentageChange(totalOrder.current, totalOrder.last),
+      },
+      orderFulfilled: {
+        count: fulfilledOrders.current,
+        change: getPercentageChange(
+          fulfilledOrders.current,
+          fulfilledOrders.last
+        ),
+      },
+      orderDelivered: {
+        count: deliveredOrders.current,
+        change: getPercentageChange(
+          deliveredOrders.current,
+          deliveredOrders.last
+        ),
+      },
+      orderCancelled: {
+        count: cancelledOrders.current,
+        change: getPercentageChange(
+          cancelledOrders.current,
+          cancelledOrders.last
+        ),
+      },
+    });
   }
 }
 

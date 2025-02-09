@@ -5,14 +5,9 @@ const notificationSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      refPath: "userType",
-      required: true,
+      ref: "SalesPerson",
     },
-    userType: {
-      type: String,
-      enum: [UserRole.Distributor, UserRole.SalesPerson],
-      required: true,
-    },
+
     title: {
       type: String,
       required: true,
