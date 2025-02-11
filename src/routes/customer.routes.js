@@ -8,7 +8,6 @@ customerRouter
   .route("/")
   .post(
     UserMiddleware.isUserLoggedIn,
-    UserMiddleware.isDistributor,
     upload.single("customerImage"),
     CustomerController.addCustomer
   )
@@ -30,8 +29,6 @@ customerRouter
     UserMiddleware.isDistributor,
     CustomerController.updateCustomer
   );
-
-
 
 module.exports = {
   customerRouter,

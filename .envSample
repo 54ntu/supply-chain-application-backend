@@ -11,3 +11,7 @@ ACCESS_TOKEN_EXPIRY = "";
 
 //node environment
 NODE_ENV = "development";
+
+//cloudnary setup
+(CLOUD_NAME = "ppppp"), (API_KEY = "lol");
+API_SECRET = "loll";
