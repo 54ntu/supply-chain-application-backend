@@ -125,16 +125,12 @@ class SalesPersonController {
     //if not then return the error message
 
     const distributorid = req.user?._id;
-    console.log(typeof distributorid);
+    // console.log(typeof distributorid);
     if (!distributorid) {
       return res.status(401).json({
         message: "distributor id is not available",
       });
     }
-
-    // const salespersondata = await SalesPerson.findOne({
-    //   distributor: distributorid,
-    // });
 
     // console.log(salespersondata);
     try {
@@ -208,6 +204,7 @@ class SalesPersonController {
     //if found return the response
 
     try {
+      const distributorid = req.user._id;
       const { id } = req.params;
       if (!isValidObjectId(id)) {
         return res.status(400).json({
@@ -219,6 +216,13 @@ class SalesPersonController {
       if (!isSalesPersonExist) {
         return res.status(404).json({
           message: "salesperson with the given id is not found",
+        });
+      }
+
+      //make sure that the distributor is the owner of that salesperson account
+      if (isSalesPersonExist.distributor.toString() !== distributorid) {
+        return res.status(401).json({
+          message: `distributor with ${distributorid} does not have any salespersons`,
         });
       }
       return res
@@ -245,7 +249,7 @@ class SalesPersonController {
 
     try {
       const distributorid = req.user?._id;
-      console.log(distributorid);
+      // console.log(typeof distributorid);
       if (!distributorid) {
         return res.status(401).json({
           message: "distributor id is required",
@@ -276,7 +280,15 @@ class SalesPersonController {
       }
 
       //delete the salesperson
-      await SalesPerson.findByIdAndDelete(salespersonid);
+      const deletedSalespersonData = await SalesPerson.findByIdAndDelete(
+        salespersonid
+      );
+
+      if (!deletedSalespersonData) {
+        return res.status(500).json({
+          message: "error deleting salesperson",
+        });
+      }
       return res.status(200).json({
         message: "salesperosn deleted successfully...",
       });

@@ -27,6 +27,7 @@ customerRouter
   .patch(
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
+    upload.single("customerImage"),
     CustomerController.updateCustomer
   );
 

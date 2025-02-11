@@ -10,7 +10,7 @@ class UserMiddleware {
 
       if (!token) {
         return res.status(400).json({
-          message: "token not provided!!",
+          message: "please login first!!",
         });
       }
 
@@ -43,7 +43,7 @@ class UserMiddleware {
       next();
     } else {
       return res.status(403).json({
-        message: "you are not allowed to perform this task",
+        message: "only distributor can perform this operation",
       });
     }
   }

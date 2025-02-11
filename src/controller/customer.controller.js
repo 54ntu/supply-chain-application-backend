@@ -1,7 +1,9 @@
 const { isValidObjectId } = require("mongoose");
 const { Customer } = require("../models/customer.models");
+const { SalesPerson } = require("../models/salesPerson.models");
 const { ApiResponse } = require("../services/ApiResponse");
 const { default: mongoose } = require("mongoose");
+const { uploadOnCloudinary } = require("../services/cloudinary");
 
 class CustomerController {
   static async addCustomer(req, res) {
@@ -21,8 +23,8 @@ class CustomerController {
         });
       }
 
-      const customerpic = req.file?.filename;
-      if (!customerpic) {
+      const customerLocalFilePath = req.file?.path;
+      if (!customerLocalFilePath) {
         return res.status(400).json({
           message: "customer pic is required.!",
         });
@@ -46,7 +48,6 @@ class CustomerController {
         !storeName ||
         !address ||
         !preferredShippingMethod ||
-        !customerpic ||
         !salespersonId
       ) {
         return res.status(400).json({
@@ -67,6 +68,16 @@ class CustomerController {
           .json({ error: "Phone number must be exactly 10 digits." });
       }
 
+      //check if salesperson exist or not
+
+      const salespersonExist = await SalesPerson.findById(salespersonId);
+
+      if (!salespersonExist) {
+        return res.status(404).json({
+          message: "salesperson id is not valid",
+        });
+      }
+
       //check whether the customer with the given email exist or not
       const isCustomerExist = await Customer.findOne({ email });
       if (isCustomerExist) {
@@ -75,11 +86,15 @@ class CustomerController {
         });
       }
 
+      //uploard customer image into the cloudinary
+      const customerImage = await uploadOnCloudinary(customerLocalFilePath);
+      // console.log(customerImage);
+
       const customerdata = await Customer.create({
         customerName,
         customerId,
         email,
-        customerpic,
+        customerpic: customerImage.url,
         phone,
         preferredShippingMethod,
         storeName,
@@ -257,7 +272,6 @@ class CustomerController {
 
     const {
       customerName,
-      customerId,
       email,
       phone,
       storeName,
@@ -266,8 +280,31 @@ class CustomerController {
       salespersonId,
     } = req.body;
 
-    //find the customer using distributor id and customer id
+    //get the customer image from the req.file
+    const customerImageLocalPath = req.file?.path;
+    if (!customerImageLocalPath) {
+      return res.status(400).json({
+        message: "customer image is required",
+      });
+    }
 
+    //upload customer image file path into the cloudinary
+    const imageurl = await uploadOnCloudinary(customerImageLocalPath);
+    if (!imageurl) {
+      return res.status(500).json({
+        message: "error occured while uploading the image into the cloudinary",
+      });
+    }
+
+    //find the salesperson using given salesperson id
+    const isSalesPersonExist = await SalesPerson.findById(salespersonId);
+    if (!isSalesPersonExist) {
+      return res.status(404).json({
+        message: "salesperson with the given id is not found",
+      });
+    }
+
+    //find the customer using distributor id and customer id
     const isCustomerExist = await Customer.findOne({
       distributorId: distributorid,
       _id: id,
@@ -280,11 +317,11 @@ class CustomerController {
     }
 
     isCustomerExist.customerName = customerName;
-    isCustomerExist.customerId = customerId;
     isCustomerExist.email = email;
     isCustomerExist.phone = phone;
     isCustomerExist.storeName = storeName;
     isCustomerExist.address = address;
+    isCustomerExist.customerpic = imageurl.url;
     isCustomerExist.preferredShippingMethod = preferredShippingMethod;
     isCustomerExist.salespersonId = salespersonId;
     await isCustomerExist.save();
