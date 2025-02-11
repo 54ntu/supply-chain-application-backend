@@ -14,16 +14,16 @@ class UserMiddleware {
         });
       }
 
-      //decode the token
-      const decodedToken = jwt.verify(token, envConfig.accessTokenSecret);
-      if (!decodedToken) {
-        return res.status(400).json({
-          message: "invalid token",
+      try {
+        //decode the token
+        const decodedToken = jwt.verify(token, envConfig.accessTokenSecret);
+        req.user = decodedToken;
+        next();
+      } catch (error) {
+        return res.status(401).json({
+          message: "invalid or expired token",
         });
       }
-
-      req.user = decodedToken;
-      next();
     } catch (error) {
       return res.status(500).json({
         error: "error occur on validating the token",

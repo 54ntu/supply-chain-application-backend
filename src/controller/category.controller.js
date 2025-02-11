@@ -1,3 +1,4 @@
+const { isValidObjectId } = require("mongoose");
 const { Category } = require("../models/category.models");
 const { ApiResponse } = require("../services/ApiResponse");
 class CategoryController {
@@ -8,10 +9,8 @@ class CategoryController {
     //if already exist then return error message
     //else add the category to the database and return success message
 
-    console.log(req.user);
     const distributorid = req.user?._id;
 
-    console.log(distributorid);
 
     if (!distributorid) {
       return res.status(401).json({
@@ -63,6 +62,81 @@ class CategoryController {
     return res
       .status(201)
       .json(new ApiResponse(201, newCategory, "Category added successfully"));
+  }
+
+  static async getCategory(req, res) {
+    //get the category of the appropriate distributor
+    try {
+      const distributorid = req.user._id;
+      if (!distributorid) {
+        return res.status(400).json({
+          message: "distributor id is required",
+        });
+      }
+
+      const categories = await Category.find({ distributor_id: distributorid });
+      // console.log(categories);
+
+      if (categories.length === 0) {
+        return res.status(404).json({
+          message: "category detail not found for the following distributor",
+        });
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            categories,
+            "category detail fetched successfully"
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        message: "something went wrong",
+      });
+    }
+  }
+
+  static async updateCategory(req, res) {
+    //get the distributor id from req.user
+    //get the category id from the req.params
+
+    const distributorid = req.user._id;
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        message: "invalid category id",
+      });
+    }
+
+    //get category category_name from the req.body
+    const { category_name } = req.body;
+
+    //find the data on basis of both distributor id and category id
+    const isCategoryExist = await Category.findOne({
+      _id: id,
+      distributor_id: distributorid,
+    });
+
+    // console.log(isCategoryExist);
+    if (!isCategoryExist) {
+      return res.status(404).json({
+        message: "category with given id doesnot exist",
+      });
+    }
+
+    //if category name is passing from the frontend then update it if not then just leave as it was
+    if (category_name) isCategoryExist.category_name = category_name;
+    await isCategoryExist.save();
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, isCategoryExist, "category updated successfully")
+      );
   }
 
   static async deleteCategory(req, res) {

@@ -9,6 +9,11 @@ categoryRouter
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
     CategoryController.addCategory
+  )
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    CategoryController.getCategory
   );
 
 categoryRouter
@@ -17,6 +22,11 @@ categoryRouter
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
     CategoryController.deleteCategory
+  )
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    CategoryController.updateCategory
   );
 
 module.exports = {

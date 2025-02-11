@@ -316,14 +316,15 @@ class CustomerController {
       });
     }
 
-    isCustomerExist.customerName = customerName;
-    isCustomerExist.email = email;
-    isCustomerExist.phone = phone;
-    isCustomerExist.storeName = storeName;
-    isCustomerExist.address = address;
-    isCustomerExist.customerpic = imageurl.url;
-    isCustomerExist.preferredShippingMethod = preferredShippingMethod;
-    isCustomerExist.salespersonId = salespersonId;
+    if (customerName) isCustomerExist.customerName = customerName;
+    if (email) isCustomerExist.email = email;
+    if (phone) isCustomerExist.phone = phone;
+    if (storeName) isCustomerExist.storeName = storeName;
+    if (address) isCustomerExist.address = address;
+    if (imageurl) isCustomerExist.customerpic = imageurl.url;
+    if (preferredShippingMethod)
+      isCustomerExist.preferredShippingMethod = preferredShippingMethod;
+    if (salespersonId) isCustomerExist.salespersonId = salespersonId;
     await isCustomerExist.save();
 
     return res
