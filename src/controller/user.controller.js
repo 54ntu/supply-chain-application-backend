@@ -10,7 +10,8 @@ const { generateOtp } = require("../services/generateOtp");
 const { sendmail } = require("../services/sendMail");
 const { envConfig } = require("../config/config");
 const { SalesPerson } = require("../models/salesPerson.models");
-const { Notification } = require("../models/notification.models");
+const { NotificationSetting } = require("../models/notificationSetting.models");
+const { uploadOnCloudinary } = require("../services/cloudinary");
 
 class UserController {
   static async singupDistributor(req, res) {
@@ -30,7 +31,7 @@ class UserController {
       regNo,
       location,
     } = req.body;
-    const verificationdocfile = req.file?.filename;
+    const verificationdocfile = req.file?.path;
     // console.log(verificationdocfile);
     if (
       !firstname ||
@@ -68,6 +69,16 @@ class UserController {
       });
     }
 
+    //upload image into the cloudinary
+    const docfile = await uploadOnCloudinary(verificationdocfile);
+    // console.log(docfile);
+
+    if (!docfile) {
+      return res.status(500).json({
+        message: "file path is not available",
+      });
+    }
+
     const hashedpassword = await hashPassword(password);
     const distributor = await User.create({
       firstname,
@@ -78,6 +89,7 @@ class UserController {
       companyName,
       regNo,
       location,
+      verificationDoc: docfile.url,
       role: UserRole.Distributor,
     });
 
@@ -105,7 +117,7 @@ class UserController {
     }
 
     //create initial notification for the distributor
-    await Notification.create({
+    await NotificationSetting.create({
       userId: isdistributorCreated._id,
       userType: isdistributorCreated.role,
     });
