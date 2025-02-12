@@ -26,6 +26,7 @@ const {
 const { OrderController } = require("./src/controller/order.controller");
 const { CustomerController } = require("./src/controller/customer.controller");
 const { UserMiddleware } = require("./src/middleware/auth.middleware");
+const { distributorOrderRouter } = require("./src/routes/getorder.route");
 const app = express();
 
 const corsOptions = {
@@ -79,6 +80,9 @@ app.use("/api/v1/notification", notificationRouter);
 
 //route for order controller
 app.use("/api/v1/order", orderRouter);
+
+//get order for distributor
+app.use("/api/v1/order-dist", distributorOrderRouter);
 
 //route for order stats
 app.get("/api/v1/order-stats", OrderController.getOrderSummary);

@@ -233,6 +233,102 @@ class OrderController {
     }
   }
 
+  static async getOrderByDistributor(req, res) {
+    try {
+      console.log("get order for distributor hoii");
+      //get the distributor id from req.user
+      const distributorid = req.user._id;
+      if (!distributorid) {
+        return res.status(400).json({
+          success: false,
+          message: "distributor id is required",
+        });
+      }
+
+      const orderdata = await Order.aggregate([
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salesPerson",
+            foreignField: "_id",
+            as: "salespersonDetails",
+          },
+        },
+        {
+          $unwind: "$salespersonDetails",
+        },
+
+        {
+          $match: {
+            "salespersonDetails.distributor": new mongoose.Types.ObjectId(
+              distributorid
+            ),
+          },
+        },
+
+        {
+          $lookup: {
+            from: "customers",
+            localField: "customer",
+            foreignField: "_id",
+            as: "customerDetails",
+          },
+        },
+        {
+          $unwind: "$customerDetails",
+        },
+        {
+          $lookup: {
+            from: "shippingdetails",
+            localField: "shippingAddress",
+            foreignField: "_id",
+            as: "shippinAddressDetails",
+          },
+        },
+        {
+          $unwind: "$shippinAddressDetails",
+        },
+
+        {
+          $project: {
+            _id: 1,
+            createdAt: 1,
+            total_amount: 1,
+            order_status: 1,
+            customerName: "$customerDetails.customerName",
+            Destination: {
+              $concat: [
+                { $ifNull: ["$shippinAddressDetails.province", ""] },
+                ",",
+                { $ifNull: ["$shippinAddressDetails.city", ""] },
+              ],
+            },
+          },
+        },
+      ]);
+
+      if (orderdata.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "orderdata not found for the logged in distributor",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        orderdata,
+        message:
+          "order data for the logged in distributor is fetched successfully",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  //this one is for salesperson because multiple salespersons are there so each one can have the access to their own orders
   static async getOrder(req, res) {
     //get the salesperson id from the req.user
     const salespersonId = req.user._id;
@@ -442,6 +538,26 @@ class OrderController {
         });
       }
 
+      const orderdata = await Order.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
+          },
+        },
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salesPerson",
+            foreignField: "_id",
+            as: "salespersonDetails",
+          },
+        },
+        // {
+        //   $unwind: "$salespersonDetails",
+        // },
+      ]);
+      console.log(orderdata);
+
       //we are applying this aggregation because we donot have direct distributor id access
       //i want that only the legit distributor can perform this operation
       const order = await Order.aggregate([
@@ -450,6 +566,7 @@ class OrderController {
             _id: new mongoose.Types.ObjectId(id),
           },
         },
+
         {
           $lookup: {
             from: "salespeople",
@@ -470,6 +587,8 @@ class OrderController {
         },
       ]);
 
+      console.log(`order : ${order}`);
+
       //verify order
       if (!order || order.length === 0) {
         return res.status(404).json({
@@ -478,45 +597,45 @@ class OrderController {
       }
 
       //find the order by orderid and update the status
-      const updatedOrder = await Order.findByIdAndUpdate(
-        id,
-        {
-          order_status,
-          payment_status,
-        },
-        {
-          new: true,
-        }
-      );
+      // const updatedOrder = await Order.findByIdAndUpdate(
+      //   id,
+      //   {
+      //     order_status,
+      //     payment_status,
+      //   },
+      //   {
+      //     new: true,
+      //   }
+      // );
 
-      // Generate tracking number
-      const trackingNumber = `TRK-${Date.now()}-${Math.floor(
-        Math.random() * 10000
-      )}`;
+      // // Generate tracking number
+      // const trackingNumber = `TRK-${Date.now()}-${Math.floor(
+      //   Math.random() * 10000
+      // )}`;
 
-      //add checks and logic for creating estimatedDelivery
-      let estimatedDelivery = new Date();
-      if (updatedOrder.shippingMethod === shipmentMethods.EXPRESS) {
-        estimatedDelivery.setDate(estimatedDelivery.getDate() + 2); //2 days
-      } else if (updatedOrder.shippingMethod === shipmentMethods.SAMEDAY) {
-        estimatedDelivery.setDate(estimatedDelivery.getDate() + 12); //12 hours
-      } else {
-        estimatedDelivery.setDate(estimatedDelivery.getDate() + 5); //5days
-      }
+      // //add checks and logic for creating estimatedDelivery
+      // let estimatedDelivery = new Date();
+      // if (updatedOrder.shippingMethod === shipmentMethods.EXPRESS) {
+      //   estimatedDelivery.setDate(estimatedDelivery.getDate() + 2); //2 days
+      // } else if (updatedOrder.shippingMethod === shipmentMethods.SAMEDAY) {
+      //   estimatedDelivery.setDate(estimatedDelivery.getDate() + 12); //12 hours
+      // } else {
+      //   estimatedDelivery.setDate(estimatedDelivery.getDate() + 5); //5days
+      // }
 
-      // console.log(updatedOrder);
-      //check order status and if orderstatus is confirmed then create shipment
-      if (updatedOrder.order_status == orderStatus.CONFIRMED) {
-        const shipment = await Shipment.create({
-          orderId: updatedOrder._id,
-          distributorId: distributorid,
-          shippingAddress: updatedOrder.shippingAddress,
-          shippingMethod: updatedOrder.shippingMethod,
-          trackingNumber: trackingNumber,
-          shippingcost: updatedOrder.shipping_charge,
-          estimatedDelivery: estimatedDelivery,
-        });
-      }
+      // // console.log(updatedOrder);
+      // //check order status and if orderstatus is confirmed then create shipment
+      // if (updatedOrder.order_status == orderStatus.CONFIRMED) {
+      //   const shipment = await Shipment.create({
+      //     orderId: updatedOrder._id,
+      //     distributorId: distributorid,
+      //     shippingAddress: updatedOrder.shippingAddress,
+      //     shippingMethod: updatedOrder.shippingMethod,
+      //     trackingNumber: trackingNumber,
+      //     shippingcost: updatedOrder.shipping_charge,
+      //     estimatedDelivery: estimatedDelivery,
+      //   });
+      // }
 
       return res.status(200).json({
         success: true,
