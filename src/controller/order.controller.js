@@ -132,7 +132,7 @@ class OrderController {
         });
       }
 
-      //create order Items
+      // create order Items
       const orderItemsData = orderItems.map((item) => ({
         orderId: newOrder._id,
         productId: item.productId,
@@ -513,6 +513,8 @@ class OrderController {
     try {
       const { id } = req.params;
       const distributorid = req.user._id;
+      console.log(distributorid);
+      console.log(req.user.role);
 
       if (!isValidObjectId(id)) {
         return res.status(400).json({
@@ -527,36 +529,6 @@ class OrderController {
           message: "distributorid is required..",
         });
       }
-
-      //get the data from the req.body
-      const { order_status, payment_status, shippingMethod } = req.body;
-
-      if (!order_status || !payment_status) {
-        return res.status(400).json({
-          success: false,
-          message: "orderstatus && paymentstatus fields are required",
-        });
-      }
-
-      const orderdata = await Order.aggregate([
-        {
-          $match: {
-            _id: new mongoose.Types.ObjectId(id),
-          },
-        },
-        {
-          $lookup: {
-            from: "salespeople",
-            localField: "salesPerson",
-            foreignField: "_id",
-            as: "salespersonDetails",
-          },
-        },
-        // {
-        //   $unwind: "$salespersonDetails",
-        // },
-      ]);
-      console.log(orderdata);
 
       //we are applying this aggregation because we donot have direct distributor id access
       //i want that only the legit distributor can perform this operation
@@ -587,7 +559,7 @@ class OrderController {
         },
       ]);
 
-      console.log(`order : ${order}`);
+      // console.log(`order : ${order}`);
 
       //verify order
       if (!order || order.length === 0) {
@@ -597,45 +569,45 @@ class OrderController {
       }
 
       //find the order by orderid and update the status
-      // const updatedOrder = await Order.findByIdAndUpdate(
-      //   id,
-      //   {
-      //     order_status,
-      //     payment_status,
-      //   },
-      //   {
-      //     new: true,
-      //   }
-      // );
+      const updatedOrder = await Order.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id) },
+        {
+          order_status: orderStatus.CONFIRMED,
+        },
+        {
+          new: true,
+        }
+      );
 
+      console.log(`updatedOrder  : ${updatedOrder}`);
       // // Generate tracking number
-      // const trackingNumber = `TRK-${Date.now()}-${Math.floor(
-      //   Math.random() * 10000
-      // )}`;
+      const trackingNumber = `TRK-${Date.now()}-${Math.floor(
+        Math.random() * 10000
+      )}`;
 
       // //add checks and logic for creating estimatedDelivery
-      // let estimatedDelivery = new Date();
-      // if (updatedOrder.shippingMethod === shipmentMethods.EXPRESS) {
-      //   estimatedDelivery.setDate(estimatedDelivery.getDate() + 2); //2 days
-      // } else if (updatedOrder.shippingMethod === shipmentMethods.SAMEDAY) {
-      //   estimatedDelivery.setDate(estimatedDelivery.getDate() + 12); //12 hours
-      // } else {
-      //   estimatedDelivery.setDate(estimatedDelivery.getDate() + 5); //5days
-      // }
+      let estimatedDelivery = new Date();
+      if (updatedOrder.shippingMethod === shipmentMethods.EXPRESS) {
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 2); //2 days
+      } else if (updatedOrder.shippingMethod === shipmentMethods.SAMEDAY) {
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 12); //12 hours
+      } else {
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 5); //5days
+      }
 
-      // // console.log(updatedOrder);
-      // //check order status and if orderstatus is confirmed then create shipment
-      // if (updatedOrder.order_status == orderStatus.CONFIRMED) {
-      //   const shipment = await Shipment.create({
-      //     orderId: updatedOrder._id,
-      //     distributorId: distributorid,
-      //     shippingAddress: updatedOrder.shippingAddress,
-      //     shippingMethod: updatedOrder.shippingMethod,
-      //     trackingNumber: trackingNumber,
-      //     shippingcost: updatedOrder.shipping_charge,
-      //     estimatedDelivery: estimatedDelivery,
-      //   });
-      // }
+      // console.log(updatedOrder);
+      //check order status and if orderstatus is confirmed then create shipment
+      if (updatedOrder.order_status == orderStatus.CONFIRMED) {
+        const shipment = await Shipment.create({
+          orderId: updatedOrder._id,
+          distributorId: distributorid,
+          shippingAddress: updatedOrder.shippingAddress,
+          shippingMethod: updatedOrder.shippingMethod,
+          trackingNumber: trackingNumber,
+          shippingcost: updatedOrder.shipping_charge,
+          estimatedDelivery: estimatedDelivery,
+        });
+      }
 
       return res.status(200).json({
         success: true,
@@ -645,7 +617,8 @@ class OrderController {
       });
     } catch (error) {
       return res.status(500).json({
-        message: "order updation failed",
+        success: false,
+        message: error.message,
       });
     }
   }
