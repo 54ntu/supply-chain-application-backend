@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { Variant } = require("./variants.models");
 
 const productSchema = new mongoose.Schema(
   {
@@ -76,6 +77,17 @@ const productSchema = new mongoose.Schema(
     },
   },
   { timestamps: true }
+);
+
+// Middleware to delete variants when a product is deleted
+productSchema.pre(
+  "deleteOne",
+  { document: true, query: false },
+  async function (next) {
+    console.log("Deleting variants for product:", this._id);
+    await Variant.deleteMany({ product_id: this._id });
+    next();
+  }
 );
 
 const Product = mongoose.model("Product", productSchema);

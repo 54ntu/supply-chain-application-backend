@@ -4,6 +4,7 @@ const { generateSKU } = require("../services/generateSKU");
 const { Variant } = require("../models/variants.models");
 const { ApiResponse } = require("../services/ApiResponse");
 const { isValidObjectId, default: mongoose } = require("mongoose");
+const { uploadOnCloudinary } = require("../services/cloudinary");
 const { envConfig } = require("../config/config");
 class ProductController {
   static async addProduct(req, res) {
@@ -31,9 +32,10 @@ class ProductController {
         return res.status(400).json({ message: "Distributor id is required" });
       }
 
-      const productImage = req.file?.filename;
-      // console.log(productImage);
-      if (!productImage) {
+      const productImageLocalFilePath = req.file?.path;
+      // console.log(productImageLocalFilePath);
+
+      if (!productImageLocalFilePath) {
         return res.status(400).json({
           message: "product image is not found..!!",
         });
@@ -64,7 +66,9 @@ class ProductController {
         !breadth ||
         !width
       ) {
-        return res.status(400).json({ message: "All fields are required" });
+        return res
+          .status(400)
+          .json({ message: "All fields are requireddfdsfdsfadsfasf" });
       }
 
       //check if the product already exist or not(same category, name)
@@ -80,6 +84,18 @@ class ProductController {
         //generate FKU for the product
         const FKU = generateFKU(category, product_name);
 
+        //if product doesnot already exist then upload image into the cloudinary
+        const productImage = await uploadOnCloudinary(
+          productImageLocalFilePath
+        );
+
+        if (!productImage) {
+          return res.status(500).json({
+            success: false,
+            message: "product image url is required",
+          });
+        }
+
         //create a new product
         existingProduct = new Product({
           distributorId: distributorid,
@@ -88,7 +104,6 @@ class ProductController {
           product_description,
           product_weight,
           product_price,
-          // product_image: productImage,
           FKU,
           length,
           breadth,
@@ -99,7 +114,7 @@ class ProductController {
           max_price: 0, //will be calculated automatically once the variants added
         });
 
-        existingProduct.product_image = productImage;
+        if (productImage.url) existingProduct.product_image = productImage.url;
         await existingProduct.save();
       }
 
@@ -158,10 +173,12 @@ class ProductController {
         const maxprice = Math.max(...prices);
         existingProduct.min_price = minPrice;
         existingProduct.max_price = maxprice;
+        existingProduct.product_price = minPrice;
       } else {
         //if no variants are added, then just show the base product price
-        existingProduct.min_price = product_price || 0;
-        existingProduct.max_price = product_price || 0;
+        existingProduct.min_price = product_price;
+        existingProduct.max_price = product_price;
+        existingProduct.product_price = product_price;
       }
 
       await existingProduct.save();
@@ -226,9 +243,7 @@ class ProductController {
           $project: {
             FKU: 1,
             product_name: 1,
-            product_image: {
-              $concat: [envConfig.base_url, "$product_image"],
-            },
+            product_image: 1,
             categoryName: "$categoryDetail.category_name",
             price: "$variantDetails.variant_price",
             total_stock: 1,
@@ -239,7 +254,7 @@ class ProductController {
       if (!products || products.length === 0) {
         return res.status(404).json({
           success: false,
-          message: "error fetching the product data",
+          message: "product data not found for the given distributor",
         });
       }
       return res
@@ -304,9 +319,7 @@ class ProductController {
             restock_threshold: 1,
             total_stock: 1,
             variants: 1,
-            product_image: {
-              $concat: [envConfig.base_url, "$product_image"],
-            },
+            product_image: 1,
           },
         },
       ]);
@@ -392,9 +405,9 @@ class ProductController {
     //find the product by id and distributor id
     //update the product data
     //return response
-    console.log("moh yeta update product tira xu hoiii");
 
     try {
+      console.log("moh yeta update product tira xu hoiii");
       const { id } = req.params;
       if (!isValidObjectId(id)) {
         return res
@@ -408,7 +421,7 @@ class ProductController {
       }
 
       //get the product image from the req.file
-      const productImage = req.file?.filename;
+      const productImageLocalPath = req.file?.path;
 
       //get the data from the req.body
       const {
@@ -425,89 +438,122 @@ class ProductController {
         variants, //variants will be the array of attributes of the product
       } = req.body;
 
-      console.log(req.body);
-
-      //validate all the required fields
-      if (
-        !category ||
-        !product_name ||
-        !product_description ||
-        !product_weight ||
-        !product_price ||
-        !length ||
-        !breadth ||
-        !width
-      ) {
-        return res.status(400).json({ message: "All fields are required" });
-      }
-
-      const product = await Product.findById({
+      const isProductExist = await Product.findById({
         _id: id,
       });
 
-      if (!product) {
+      if (!isProductExist) {
         return res
           .status(404)
           .json({ message: "product with the given id not found" });
       }
 
-      // console.log(typeof )
+      // console.log(isProductExist);
       //if product found then check whether authorized user or not
-      if (product.distributorId.toString() != distributorid) {
+      if (isProductExist.distributorId.toString() != distributorid) {
         return res.status(403).json({
           error: "this product does not belongs to you😡😡😡😡🤬🤬",
         });
       }
 
-      console.log(quantity);
+      //upload updated product image into the cloudinary
+      const productimage = await uploadOnCloudinary(productImageLocalPath);
+
+      // console.log(typeof quantity);
+      // console.log(typeof product_price);
+      // console.log(productimage.url);
+
       //update the product data
-      product.category = category;
-      product.product_name = product_name;
-      product.product_description = product_description;
-      product.product_weight = product_weight;
-      product.product_price = product_price;
-      product.product_image = productImage;
-      product.length = length;
-      product.breadth = breadth;
-      product.width = width;
-      product.total_stock += quantity || 0;
-      product.restock_threshold = restock_threshold;
+      if (category) isProductExist.category = category;
+      if (product_name) isProductExist.product_name = product_name;
+      if (product_description)
+        isProductExist.product_description = product_description;
+      if (product_weight) isProductExist.product_weight = product_weight;
+      // if (productimage.url) isProductExist.product_image = productimage.url;
+      if (length) isProductExist.length = length;
+      if (breadth) isProductExist.breadth = breadth;
+      if (width) isProductExist.width = width;
+      if (restock_threshold)
+        isProductExist.restock_threshold = restock_threshold;
+      // if (variants) product.variants = variants;
 
-      await product.save();
+      let totalStock = 0;
+      let variantArray = [];
+      //handle variant wise updation as well
 
-      //handle variants updation as well
-      if (variants) {
-        const updatedVariants = JSON.parse(variants); //parse if sent as a JSON string
-        for (const variant of updatedVariants) {
-          if (variant._id) {
-            //update existing variant
-            await Variant.findByIdAndUpdate(variant._id, {
-              SKU: variant.SKU,
-              attributes: variant.attributes,
-              variant_price: variant.variant_price,
-              stock: variant.stock,
-            });
+      if (variants && Array.isArray(variants)) {
+        for (const variant of variants) {
+          //find the existing variant
+          console.log(variant.attributes.size);
+          const existingVariant = await Variant.findOne({
+            product_id: isProductExist._id,
+          });
+
+          // console.log(`existingvariant data : ${existingVariant}`);
+          if (existingVariant) {
+            if (variant.attributes)
+              existingVariant.attributes = variant.attributes;
+            if (variant.variant_price)
+              existingVariant.variant_price = variant.variant_price;
+            if (variant.stock) existingVariant.stock += variant.stock;
+
+            await existingVariant.save();
+            // console.log(`existingVariant stock `, typeof existingVariant.stock);
+            totalStock += existingVariant.stock;
+
+            variantArray.push(existingVariant);
           } else {
-            //add a new variant
+            const SKU = generateSKU(isProductExist.FKU, variant.attributes);
+
+            //create new variant
             const newVariant = new Variant({
-              product_id: id,
-              SKU: variant.SKU,
+              product_id: isProductExist._id,
+              SKU,
               attributes: variant.attributes,
               variant_price: variant.variant_price,
               stock: variant.stock,
             });
+
             await newVariant.save();
+
+            totalStock += Number(variant.stock);
+            variantArray.push(newVariant);
           }
         }
       }
 
+      //update the total stock of the product based on the variant
+      if (totalStock > 0) {
+        isProductExist.total_stock += Number(totalStock);
+      } else {
+        isProductExist.total_stock += Number(quantity);
+      }
+
+      // //update the price based on the variant or normal product price
+      if (variantArray.length > 0) {
+        const prices = variantArray.map((v) => v.variant_price);
+        const minPrice = Math.min(...prices);
+        const maxprice = Math.max(...prices);
+        isProductExist.min_price = minPrice;
+        isProductExist.max_price = maxprice;
+        isProductExist.product_price = minPrice;
+      } else {
+        //if no variants are added, then just show the base product price
+        isProductExist.min_price = product_price;
+        isProductExist.max_price = product_price;
+        isProductExist.product_price = product_price;
+      }
+
+      await isProductExist.save();
+
       return res.status(200).json({
         message: "product updated successfully",
-        product,
+        isProductExist,
       });
     } catch (error) {
       return res.status(500).json({
         message: "error updating product",
+        error: error.message,
       });
     }
   }

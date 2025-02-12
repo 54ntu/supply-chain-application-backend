@@ -28,6 +28,7 @@ productRouter
   .patch(
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
+    upload.single("productImage"),
     ProductController.updateProduct
   );
 
