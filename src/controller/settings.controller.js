@@ -49,6 +49,8 @@ class SettingsController {
           currentPassword,
           user.password
         );
+
+        
         if (!isPasswordMatched) {
           return res.status(400).json({
             error: "password doesnot match",
@@ -75,6 +77,8 @@ class SettingsController {
       if (!user) {
         user = await SalesPerson.findById(id);
       }
+
+      console.log(`user data after database query : ${user}`);
 
       if (!user) {
         return res.status(404).json({
@@ -161,21 +165,16 @@ class SettingsController {
           error: "userId  is not valid",
         });
       }
-      const {
-        orderConfirmation,
-        orderDelayed,
-        orderDelivered,
-        emailNotifications,
-      } = req.body;
+      const { order, stock, restock_remainder, emailNotifications } = req.body;
 
       //update notification table by finding the distributor id from the notification table
       const updatedNotificationSettings =
-        await NotificationSetting.findByIdAndUpdate(
+        await NotificationSetting.findOneAndUpdate(
           { userId: userId },
           {
-            orderConfirmation,
-            orderDelayed,
-            orderDelivered,
+            order,
+            stock,
+            restock_remainder,
             emailNotifications,
           },
           {

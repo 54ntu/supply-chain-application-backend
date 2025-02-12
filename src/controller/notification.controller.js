@@ -2,6 +2,7 @@ const { Notification } = require("../models/notification.models");
 const { NotificationSetting } = require("../models/notificationSetting.models");
 const { sendmail } = require("../services/sendMail");
 const { ApiResponse } = require("../services/ApiResponse");
+const { default: mongoose } = require("mongoose");
 
 class NotificationController {
   static async getNotification(req, res) {
@@ -29,17 +30,32 @@ class NotificationController {
 
       //if notifications settings are true then store that settings into the array
       let notificationAllowed = [];
-      if (settings.order) notificationAllowed.push("order");
-      if (settings.stock) notificationAllowed.push("stock");
-      if (settings.restock_remainder)
+      if (settings.order === true) notificationAllowed.push("order");
+      if (settings.stock === true) notificationAllowed.push("stock");
+      if (settings.restock_remainder === true)
         notificationAllowed.push("restock_remainder");
+
+      if (!Array.isArray(notificationAllowed)) {
+        return res.status(400).json({
+          notificationAllowed,
+          success: false,
+        });
+      }
 
       //fetch the notification messages from the notification collection based on the userid,usertype or role and notification settings
       const notifications = await Notification.find({
-        userId,
-        userType,
         type: { $in: notificationAllowed },
       }).sort({ createdAt: -1 });
+
+      console.log(`notification value is : ${notifications}`);
+
+      //check whether notifications data are found or not
+      if (notifications.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: `user with id ${userId} has following notification settings : order: ${settings.order} stock: ${settings.stock} restock_reminder:${settings.restock_remainder}`,
+        });
+      }
 
       //check if email notification is on
       if (settings.emailNotifications) {
@@ -66,7 +82,7 @@ class NotificationController {
     } catch (error) {
       return res.status(500).json({
         success: false,
-        error: "something went wrong",
+        message: error.message,
       });
     }
   }
@@ -97,27 +113,67 @@ class NotificationController {
         });
       }
 
-      const updateNotification = await Notification.updateMany(
-        {
-          userId,
-          userType,
-        },
-        { status }
-      );
+      // const updateNotification = await Notification.updateMany(
+      //   {
+      //     userId,
+      //     userType,
+      //   },
+      //   { status }
+      // );
 
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(
-            200,
-            updateNotification,
-            "notification updated successfully"
-          )
+      const notificationToupdate = await Notification.aggregate([
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "userId",
+            foreignField: "_id",
+            as: "salespersonDetails",
+          },
+        },
+        {
+          $unwind: "$salespersonDetails",
+        },
+        {
+          $match: {
+            "salespersonDetails.distributor": new mongoose.Types.ObjectId(
+              userId
+            ),
+
+            status: "unread",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+          },
+        },
+      ]);
+
+      // console.log(notificationToupdate);
+
+      if (notificationToupdate.length > 0) {
+        const notificationIds = notificationToupdate.map((n) => n._id);
+
+        const updatedData = await Notification.updateMany(
+          { _id: { $in: notificationIds } },
+          { $set: { status: "read" } }
         );
+
+        // console.log(updatedData);
+        return res.status(200).json({
+          success: true,
+          message: "Notifications marked as read",
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: "unread notifications not found",
+        });
+      }
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: "something went wrong😑😑😑😑",
+        message: error.message,
       });
     }
   }
