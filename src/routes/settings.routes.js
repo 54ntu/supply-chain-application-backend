@@ -11,14 +11,12 @@ settingRouter
   .route("/updateprofile")
   .patch(
     UserMiddleware.isUserLoggedIn,
-    UserMiddleware.isDistributor,
     SettingsController.updateProfile
   );
 settingRouter
   .route("/notification-update")
   .patch(
     UserMiddleware.isUserLoggedIn,
-    UserMiddleware.isDistributor,
     SettingsController.udateNotificationSettings
   );
 module.exports = {

@@ -298,6 +298,86 @@ class SalesPersonController {
       });
     }
   }
+
+  static async updateSalespersonPassword(req, res) {
+    //get the id from the req.user
+    try {
+      const salespersonId = req.user._id;
+      if (!salespersonId) {
+        return res.status(400).json({
+          success: false,
+          message: "salesperson id is required",
+        });
+      }
+      //get new password and confirm password from the req.body
+
+      const { new_password, confirm_password } = req.body;
+      if (!new_password || !confirm_password) {
+        return res.status(400).json({
+          success: false,
+          message: "new_password and confirm password are required😑😑😑😑😑",
+        });
+      }
+
+      if (new_password !== confirm_password) {
+        return res.status(400).json({
+          success: false,
+          message: "password doesnot matched",
+        });
+      }
+
+      if (new_password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "password must be 8 digits or longer",
+        });
+      }
+
+      //hashed the new password
+      const hashedPassword = await hashPassword(new_password);
+      // console.log(hashedPassword);
+      if (!hashedPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "password hashing failed",
+        });
+      }
+
+      //update the password of the logged in salesperson
+      const updatedPassword = await SalesPerson.findOneAndUpdate(
+        { _id: salespersonId },
+        {
+          password: hashedPassword,
+        },
+        {
+          new: true,
+        }
+      );
+
+      // console.log(updatedPassword);
+      if (!updatedPassword) {
+        return res.status(500).json({
+          success: false,
+          message: "password updation failed😒😒😒😒😒...please try againa",
+        });
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            "password updated successsfully😎😎😎😊😊😊😊..."
+          )
+        );
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "password updation failed",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = {

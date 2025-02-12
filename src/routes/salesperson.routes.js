@@ -37,6 +37,13 @@ salesPersonRouter
     SalesPersonController.getSalesPersonByid
   );
 
+salesPersonRouter
+  .route("/set-password")
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    SalesPersonController.updateSalespersonPassword
+  );
+
 module.exports = {
   salesPersonRouter,
 };

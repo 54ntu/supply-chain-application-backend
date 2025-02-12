@@ -8,22 +8,15 @@ customerRouter
   .route("/")
   .post(
     UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
     upload.single("customerImage"),
     CustomerController.addCustomer
   )
-  .get(
-    UserMiddleware.isUserLoggedIn,
-    UserMiddleware.isDistributor,
-    CustomerController.getCustomer
-  );
+  .get(UserMiddleware.isUserLoggedIn, CustomerController.getCustomer);
 
 customerRouter
   .route("/:id")
-  .get(
-    UserMiddleware.isUserLoggedIn,
-    UserMiddleware.isDistributor,
-    CustomerController.getCustomerById
-  )
+  .get(UserMiddleware.isUserLoggedIn, CustomerController.getCustomerById)
   .patch(
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
