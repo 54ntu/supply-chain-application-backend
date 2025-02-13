@@ -47,8 +47,6 @@ class NotificationController {
         type: { $in: notificationAllowed },
       }).sort({ createdAt: -1 });
 
-      console.log(`notification value is : ${notifications}`);
-
       //check whether notifications data are found or not
       if (notifications.length === 0) {
         return res.status(404).json({
@@ -102,24 +100,6 @@ class NotificationController {
           message: "userid and usertype are required",
         });
       }
-
-      //get the status from the req.body
-
-      const { status } = req.body;
-      if (!status) {
-        return res.status(400).json({
-          success: false,
-          message: "status is required",
-        });
-      }
-
-      // const updateNotification = await Notification.updateMany(
-      //   {
-      //     userId,
-      //     userType,
-      //   },
-      //   { status }
-      // );
 
       const notificationToupdate = await Notification.aggregate([
         {

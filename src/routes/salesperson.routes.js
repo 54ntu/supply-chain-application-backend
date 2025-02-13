@@ -44,6 +44,14 @@ salesPersonRouter
     SalesPersonController.updateSalespersonPassword
   );
 
+salesPersonRouter
+  .route("/sales-summary")
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    SalesPersonController.getSalesPersonSummary
+  );
+
 module.exports = {
   salesPersonRouter,
 };

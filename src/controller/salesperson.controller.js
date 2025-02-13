@@ -4,6 +4,8 @@ const { ApiResponse } = require("../services/ApiResponse");
 const { default: mongoose, isValidObjectId } = require("mongoose");
 const { SalesPerson } = require("../models/salesPerson.models");
 const { NotificationSetting } = require("../models/notificationSetting.models");
+const moment = require("moment");
+const { Order } = require("../models/order.models");
 class SalesPersonController {
   static async addSalesperson(req, res) {
     //get the distributor id from the middleware
@@ -375,6 +377,314 @@ class SalesPersonController {
         success: false,
         message: "password updation failed",
         error: error.message,
+      });
+    }
+  }
+
+  static async getSalesPersonSummary(req, res) {
+    try {
+      //get the distributor id from the req.user
+      const distributorid = req.user._id;
+      if (!distributorid) {
+        return res.status(400).json({
+          success: false,
+          message: "distributor id is required ...please login first",
+        });
+      }
+
+      //get current and last week's date range
+      const currentWeekStart = moment().startOf("week").toDate();
+      const lastWeekStart = moment()
+        .subtract(1, "weeks")
+        .startOf("week")
+        .toDate();
+      const lastWeekEnd = moment().subtract(1, "weeks").endOf("week").toDate();
+
+      // console.log(currentWeekStart);
+      // console.log(lastWeekStart);
+      // console.log(lastWeekEnd);
+
+      //fetch total employees
+      const TotalEmployees = await SalesPerson.countDocuments({
+        distributor: new mongoose.Types.ObjectId(distributorid),
+      });
+
+      // console.log(TotalEmployees);
+
+      const lastWeekTotalEmployees = await SalesPerson.countDocuments({
+        distributor: new mongoose.Types.ObjectId(distributorid),
+        createdAt: { $lte: lastWeekEnd },
+      });
+
+      // console.log(lastWeekTotalEmployees);
+
+      //fetch sales activity current week(salespersons who placed at least one order this week)
+      //here i am fetching the array of total orders created this week
+
+      const activeSalespersons = await Order.aggregate([
+        {
+          $match: { createdAt: { $gte: currentWeekStart } },
+        },
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salesPerson",
+            foreignField: "_id",
+            as: "salespersonDetails",
+          },
+        },
+        {
+          $unwind: "$salespersonDetails",
+        },
+        //match distributor id in the salesperson schema and logged in distributor id
+        //as distributor must get the relavent salespersons data
+        {
+          $match: {
+            "salespersonDetails.distributor": new mongoose.Types.ObjectId(
+              distributorid
+            ),
+          },
+        },
+
+        //the given group will give the total orders created by each salesperson
+        // {
+        //   $group: {
+        //     _id: "$salesPerson",
+        //     totalOrders: { $sum: 1 },
+        //   },
+        // },
+
+        {
+          $project: {
+            _id: 1,
+            // totalOrders: 1,
+          },
+        },
+      ]);
+      // console.log(activeSalespersons.length);
+
+      const totalSalesPerson = await SalesPerson.countDocuments({
+        distributor: new mongoose.Types.ObjectId(distributorid),
+      });
+
+      // console.log(`total salesperson data is : ${totalSalesPerson}`);
+      const salesActivity = (
+        (activeSalespersons.length / totalSalesPerson) *
+        100
+      ).toFixed(2);
+
+      // console.log(salesActivity);
+
+      //fetch sales activity previous week
+      const orderCreatedPreviousWeek = await Order.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: lastWeekStart, $lte: lastWeekEnd },
+          },
+        },
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salesPerson",
+            foreignField: "_id",
+            as: "salespersondetails",
+          },
+        },
+        {
+          $unwind: "$salespersondetails",
+        },
+        {
+          $match: {
+            "salespersondetails.distributor": new mongoose.Types.ObjectId(
+              distributorid
+            ),
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+          },
+        },
+      ]);
+
+      // console.log(`orderCreatedPreviousWeek : ${orderCreatedPreviousWeek}`);
+
+      const lastWeekSalesActivity = (
+        (orderCreatedPreviousWeek.length / lastWeekTotalEmployees) *
+        100
+      ).toFixed(2);
+
+      // console.log(`lastWeekSalesActivity : ${lastWeekSalesActivity}`);
+
+      //for customer retention
+      //we calculate customer retention by calculating the orders created on behalf of customer
+      //customer id is stored in the order collection
+      //so with the help of customer id we can easily fetch the data
+      const currentCustomers = await Order.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: currentWeekStart },
+          },
+        },
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salesPerson",
+            foreignField: "_id",
+            as: "salespersonDetails",
+          },
+        },
+        {
+          $unwind: "$salespersonDetails",
+        },
+        {
+          $match: {
+            "salespersonDetails.distributor": new mongoose.Types.ObjectId(
+              distributorid
+            ),
+          },
+        },
+        {
+          $project: {
+            customer: 1,
+          },
+        },
+      ]);
+
+      // console.log(currentCustomers);
+
+      //last week customers
+      const lastWeekCustomers = await Order.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: lastWeekStart, $lte: lastWeekEnd },
+          },
+        },
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salesPerson",
+            foreignField: "_id",
+            as: "salespersonDetails",
+          },
+        },
+        {
+          $unwind: "$salespersonDetails",
+        },
+        {
+          $match: {
+            "salespersonDetails.distributor": new mongoose.Types.ObjectId(
+              distributorid
+            ),
+          },
+        },
+        {
+          $project: {
+            customer: 1,
+          },
+        },
+      ]);
+
+      // console.log(`lastWeekCustomers : ${lastWeekCustomers}`);
+
+      const retainedCustomers = currentCustomers.filter((customer) =>
+        lastWeekCustomers.includes(customer)
+      );
+
+      // console.log(retainedCustomers);
+
+      const customerRetention = lastWeekCustomers.length
+        ? ((retainedCustomers.length / lastWeekCustomers.length) * 100).toFixed(
+            2
+          ) + "%"
+        : "0.00%";
+
+      //fetch store coverage (unique regions assigned to salespersons)
+      const storeCoverage = await SalesPerson.aggregate([
+        //this match query will help us to filter data on basis of distributor
+        //because only the valid distributor who create salesperson can see those data
+        {
+          $match: { distributor: new mongoose.Types.ObjectId(distributorid) },
+        },
+
+        //group using assign_region also helps to filter on basis of unique value only
+        //if repeated it counts as same or 1
+        {
+          $group: {
+            _id: "$assign_region",
+          },
+        },
+      ]);
+
+      // console.log(storeCoverage);
+
+      //last week store coverage
+      const lastWeekStoreCoverage = await SalesPerson.aggregate([
+        {
+          $match: {
+            $and: [
+              { distributor: new mongoose.Types.ObjectId(distributorid) },
+              { createdAt: { $gte: lastWeekStart, $lte: lastWeekEnd } },
+            ],
+          },
+        },
+        {
+          $group: {
+            _id: "assign_region",
+          },
+        },
+      ]);
+
+      // console.log(`lastWeekStoreCoverage : ${lastWeekStoreCoverage}`);
+
+      //calculate percentage changes
+      const employeeGrowth = lastWeekTotalEmployees
+        ? (
+            ((TotalEmployees - lastWeekTotalEmployees) /
+              lastWeekTotalEmployees) *
+            100
+          ).toFixed(2) + "%"
+        : "0.00 %";
+
+      const retentionChange = lastWeekCustomers.length
+        ? (
+            ((customerRetention -
+              (lastWeekCustomers.length / TotalEmployees) * 100) /
+              (lastWeekCustomers.length / TotalEmployees)) *
+            100
+          ).toFixed(2) + "%"
+        : "0.00%";
+
+      const storeCoverageChange = lastWeekStoreCoverage.length
+        ? (
+            ((storeCoverage - lastWeekStoreCoverage) / lastWeekStoreCoverage) *
+            100
+          ).toFixed(2) + "%"
+        : "0.00%";
+
+      return res.status(200).json({
+        totalEmployess: { value: TotalEmployees, change: employeeGrowth },
+        salesActivity: {
+          value: salesActivity,
+          change: `${
+            lastWeekSalesActivity.length
+              ? (salesActivity.length - lastWeekSalesActivity.length).toFixed(2)
+              : 0.0
+          }%`,
+        },
+        customerRetention: {
+          value: customerRetention,
+          change: retentionChange,
+        },
+        storeCoverage: {
+          value: storeCoverage.length,
+          change: storeCoverageChange,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
       });
     }
   }
