@@ -27,6 +27,9 @@ const { OrderController } = require("./src/controller/order.controller");
 const { CustomerController } = require("./src/controller/customer.controller");
 const { UserMiddleware } = require("./src/middleware/auth.middleware");
 const { distributorOrderRouter } = require("./src/routes/getorder.route");
+const {
+  salesCustomerRouter,
+} = require("./src/routes/customer-salesperson-side.route");
 const app = express();
 
 const corsOptions = {
@@ -63,6 +66,9 @@ app.use("/api/v1/product", productRouter);
 
 //routes for customer controller
 app.use("/api/v1/customer", customerRouter);
+
+//routes for customer controller salesperson side
+app.use("/api/v1/sales-customer", salesCustomerRouter);
 
 //routes for customer summary
 app.get(

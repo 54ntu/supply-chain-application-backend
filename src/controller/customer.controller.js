@@ -4,6 +4,7 @@ const { SalesPerson } = require("../models/salesPerson.models");
 const { ApiResponse } = require("../services/ApiResponse");
 const { default: mongoose } = require("mongoose");
 const { uploadOnCloudinary } = require("../services/cloudinary");
+const { Order } = require("../models/order.models");
 
 class CustomerController {
   static async addCustomer(req, res) {
@@ -121,6 +122,210 @@ class CustomerController {
     }
   }
 
+  //here logged in salesperson will get the customer details
+  //which are assigned to them
+  static async getCustomerDetailsForSalesPerson(req, res) {
+    try {
+      //get the salesperson id from req.user
+      const salespersonid = req.user._id;
+      if (!salespersonid) {
+        return res.status(400).json({
+          success: false,
+          message: "salesperson id is required",
+        });
+      }
+
+      //filter the customer table on the basis of salesperson id
+      const customerDetails = await Customer.aggregate([
+        {
+          $match: {
+            salespersonId: new mongoose.Types.ObjectId(salespersonid),
+          },
+        },
+        {
+          $project: {
+            customerName: 1,
+            address: 1,
+            email: 1,
+            phone: 1,
+            customerpic: 1,
+          },
+        },
+      ]);
+
+      if (customerDetails.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "customer data for the logged in salesperson fetched successfully",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        customerDetails,
+        message: "customer data fetched successfully",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async getCustomerDetailsById(req, res) {
+    //get the customer id from req.params
+    try {
+      const { id } = req.params;
+      //get the salesperson id from req.user
+      const salespersonid = req.user._id;
+      if (!salespersonid) {
+        return res.status(400).json({
+          success: false,
+          message: "salesperson id is not found",
+        });
+      }
+
+      const customerDetails = await Customer.aggregate([
+        {
+          $match: {
+            $and: [
+              { _id: new mongoose.Types.ObjectId(id) },
+              { salespersonId: new mongoose.Types.ObjectId(salespersonid) },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salespersonId",
+            foreignField: "_id",
+            as: "salespersondetails",
+          },
+        },
+        {
+          $unwind: "$salespersondetails",
+        },
+        {
+          $project: {
+            customerId: 1,
+            phone: 1,
+            email: 1,
+            address: 1,
+            storeName: 1,
+            createdAt: 1,
+            preferredShippingMethod: 1,
+            salesRepresentative: {
+              $concat: [
+                { $ifNull: ["$salespersondetails.firstname", ""] },
+                " ",
+                { $ifNull: ["$salespersondetails.lastname", ""] },
+              ],
+            },
+          },
+        },
+      ]);
+
+      // console.log(customerDetails);
+      if (customerDetails.length === 0) {
+        return res.status(500).json({
+          success: false,
+          message: "something went wrong",
+        });
+      }
+
+      //get the order for the given customer
+      const orderDetails = await Order.aggregate([
+        {
+          $match: {
+            customer: new mongoose.Types.ObjectId(id),
+          },
+        },
+        //also join shipment collection as orderId is stored in the shipment collection
+        {
+          $lookup: {
+            from: "shipments",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "shipmentDetails",
+          },
+        },
+        {
+          $unwind: "$shipmentDetails",
+        },
+
+        {
+          $lookup: {
+            from: "orderitems",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "orderItemsDetails",
+          },
+        },
+        {
+          $unwind: "$orderItemsDetails",
+        },
+
+        //join products with orderItems
+
+        {
+          $lookup: {
+            from: "products",
+            localField: "orderItemsDetails.productId",
+            foreignField: "_id",
+            as: "productDetails",
+          },
+        },
+        {
+          $unwind: "$productDetails",
+        },
+
+        //join category with products
+        {
+          $lookup: {
+            from: "categories",
+            localField: "productDetails.category",
+            foreignField: "_id",
+            as: "categoryDetails",
+          },
+        },
+        {
+          $unwind: "$categoryDetails",
+        },
+
+        {
+          $group: {
+            _id: "$_id",
+            orderId: { $first: "$order_number" }, // Assuming 'order_number' exists in Order schema
+            orderDate: { $first: "$createdAt" },
+            shippingStatus: { $first: "$shipmentDetails.status" },
+            paymentStatus: { $first: "$payment_status" },
+            total_amount: { $first: "$total_amount" },
+            total_quantity: { $first: "$total_quantity" },
+            items: {
+              $push: {
+                productName: "$productDetails.product_name",
+                category: "$categoryDetails.category_name",
+                unitCost: "$orderItemsDetails.price",
+                quantity: "$orderItemsDetails.quantity",
+              },
+            },
+          },
+        },
+      ]);
+
+      return res.json(orderDetails);
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  //this one is for distributor side
+  //as distributor is the person who is responsible for adding the customer
   static async getCustomer(req, res) {
     //get the distributor id from the req.user
     //validate the distributor id provided or not
