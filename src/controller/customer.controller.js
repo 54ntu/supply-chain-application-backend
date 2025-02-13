@@ -340,19 +340,18 @@ class CustomerController {
 
   static async getcustomerSummary(req, res) {
     // console.log("moh yeta customer tira xu hoi");
-    const userid = req.user._id; //it is distributor id
-    if (!userid) {
+    const distributorid = req.user._id; //it is distributor id
+    if (!distributorid) {
       return res.status(400).json({
         success: false,
         message: "valid userid is required",
       });
     }
-
     0;
     const customers = await Customer.aggregate([
       {
         $match: {
-          distributorId: new mongoose.Types.ObjectId(userid),
+          distributorId: new mongoose.Types.ObjectId(distributorid),
         },
       },
       {
