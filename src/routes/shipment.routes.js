@@ -17,15 +17,12 @@ shipmentRouter
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
     ShipmentController.getShipmentDataById
+  )
+  .patch(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    ShipmentController.updateshipmentStatus
   );
-
-// shipmentRouter
-//   .route("/performance")
-//   .get(
-//     UserMiddleware.isUserLoggedIn,
-//     UserMiddleware.isDistributor,
-//     ShipmentController.getShipmentPerformance
-//   );
 
 module.exports = {
   shipmentRouter,

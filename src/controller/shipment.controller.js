@@ -3,6 +3,7 @@ const { Shipment } = require("../models/shipment.models");
 const { ApiResponse } = require("../services/ApiResponse");
 const { shipmentMethods, orderStatus } = require("../global");
 const { percentageChange } = require("../services/calculatePercentage");
+const { Order } = require("../models/order.models");
 class ShipmentController {
   static async getShipmentdata(req, res) {
     //get the distributor id from req.user
@@ -240,7 +241,68 @@ class ShipmentController {
   // }
 
   static async updateshipmentStatus(req, res) {
-    
+    //get the distributor id from the req.user
+    try {
+      const distributorid = req.user._id;
+      if (!distributorid) {
+        return res.status(400).json({
+          success: false,
+          message: "distributor id is required",
+        });
+      }
+
+      //get the shipment id from the req.params
+      const { id } = req.params;
+      if (!isValidObjectId(id)) {
+        return res.status(400).json({
+          success: false,
+          message: "invalid shipment id ",
+        });
+      }
+
+      //get the status from the req.body
+      const { status } = req.body;
+      if (!status) {
+        return res.status(400).json({
+          success: false,
+          message: "status must be required",
+        });
+      }
+
+      //find the shipment data and update the status
+      const shipment = await Shipment.findOne({
+        _id: new mongoose.Types.ObjectId(id),
+        distributorId: new mongoose.Types.ObjectId(distributorid),
+      });
+
+      if (!shipment) {
+        return res.status(404).json({
+          success: false,
+          message: "shipment data not found",
+        });
+      }
+
+      // console.log(shipment);
+      shipment.status = status;
+      await shipment.save();
+
+      //update the order status too
+      if (status === orderStatus.DELIVERED) {
+        await Order.findByIdAndUpdate(shipment.orderId, {
+          order_status: orderStatus.DELIVERED,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "shipment and order status updated successfully",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
   }
 }
 
