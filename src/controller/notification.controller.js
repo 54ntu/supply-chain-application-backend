@@ -51,7 +51,7 @@ class NotificationController {
       if (notifications.length === 0) {
         return res.status(404).json({
           success: false,
-          message: `user with id ${userId} has following notification settings : order: ${settings.order} stock: ${settings.stock} restock_reminder:${settings.restock_remainder}`,
+          message: `notification not available ------user with id ${userId} has following notification settings : order: ${settings.order} stock: ${settings.stock} restock_reminder:${settings.restock_remainder}`,
         });
       }
 

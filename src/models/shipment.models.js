@@ -43,7 +43,7 @@ const shipmentSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
-    dispatchedDat: { type: Date },
+    dispatchedDate: { type: Date },
     estimatedDelivery: { type: Date },
     deliveredDate: { type: Date },
   },

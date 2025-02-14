@@ -1,5 +1,6 @@
 const { Shipment } = require("../models/shipment.models");
 const { percentageChange } = require("../services/calculatePercentage");
+const { orderStatus } = require("../global/index");
 
 const getShipmentPerformance = async (req, res) => {
   console.log("shipment performance tira hoi");
@@ -24,7 +25,7 @@ const getShipmentPerformance = async (req, res) => {
     // Fetch successful (on-time) deliveries
     const onTimeDeliveriesCurrentYear = await Shipment.countDocuments({
       status: orderStatus.DELIVERED,
-      deliveredDate: { $lte: "$estimatedDelivery" },
+      deliveredDate: { $lte: new Date("$estimatedDelivery") },
       createdAt: { $gte: currentYearStart, $lte: currentYearEnd },
     });
 
@@ -52,7 +53,7 @@ const getShipmentPerformance = async (req, res) => {
 
     const lateDeliveriesPreviousYear = await Shipment.countDocuments({
       status: orderStatus.DELIVERED,
-      deliveredDate: { $gt: "$estimatedDelivery" },
+      deliveredDate: { $gt: "$estimatedDelivery " },
       createdAt: { $gte: previousYearStart, $lte: previousYearEnd },
     });
 
@@ -103,7 +104,7 @@ const getShipmentPerformance = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "something went wrong",
+      message: error.message,
     });
   }
 };

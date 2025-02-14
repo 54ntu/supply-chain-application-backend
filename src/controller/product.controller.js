@@ -35,11 +35,11 @@ class ProductController {
       const productImageLocalFilePath = req.file?.path;
       // console.log(productImageLocalFilePath);
 
-      if (!productImageLocalFilePath) {
-        return res.status(400).json({
-          message: "product image is not found..!!",
-        });
-      }
+      // if (!productImageLocalFilePath) {
+      //   return res.status(400).json({
+      //     message: "product image is not found..!!",
+      //   });
+      // }
 
       //get the data from the req.body
       const {
@@ -80,21 +80,31 @@ class ProductController {
       let totalStock = 0;
       let variantArray = [];
 
+      let FKU;
       if (!existingProduct) {
         //generate FKU for the product
-        const FKU = generateFKU(category, product_name);
+        FKU = generateFKU(category, product_name);
+
+        //check whether the FKU is unique
+        const existingFKU = await Product.findOne({ FKU });
+        if (existingFKU) {
+          return res.status(400).json({
+            message:
+              "FKU already exists, add another product with different name and category",
+          });
+        }
 
         //if product doesnot already exist then upload image into the cloudinary
         const productImage = await uploadOnCloudinary(
           productImageLocalFilePath
         );
 
-        if (!productImage) {
-          return res.status(500).json({
-            success: false,
-            message: "product image url is required",
-          });
-        }
+        // if (!productImage) {
+        //   return res.status(500).json({
+        //     success: false,
+        //     message: "product image url is required",
+        //   });
+        // }
 
         //create a new product
         existingProduct = new Product({
@@ -221,10 +231,8 @@ class ProductController {
             as: "categoryDetail",
           },
         },
-        {
-          $unwind: "$categoryDetail",
-        },
-        // //for variants data
+
+        //for variants data
         {
           $lookup: {
             from: "variants",
@@ -233,19 +241,16 @@ class ProductController {
             as: "variantDetails",
           },
         },
-        {
-          $unwind: {
-            path: "$variantDetails",
-            preserveNullAndEmptyArrays: true, //keep documents even when "variantdetails" is empty
-          },
-        },
+
         {
           $project: {
             FKU: 1,
             product_name: 1,
             product_image: 1,
-            categoryName: "$categoryDetail.category_name",
-            price: "$variantDetails.variant_price",
+            categoryName: {
+              $arrayElemAt: ["$categoryDetail.category_name", 0],
+            },
+            price: { $arrayElemAt: ["$variantDetails.variant_price", 0] },
             total_stock: 1,
           },
         },
@@ -257,6 +262,8 @@ class ProductController {
           message: "product data not found for the given distributor",
         });
       }
+
+      // const products = await Product.find();
       return res
         .status(200)
         .json(
@@ -439,7 +446,7 @@ class ProductController {
       } = req.body;
 
       const isProductExist = await Product.findById({
-        _id: id,
+        _id: new mongoose.Types.ObjectId(id),
       });
 
       if (!isProductExist) {
@@ -469,7 +476,7 @@ class ProductController {
       if (product_description)
         isProductExist.product_description = product_description;
       if (product_weight) isProductExist.product_weight = product_weight;
-      // if (productimage.url) isProductExist.product_image = productimage.url;
+      if (productimage.url) isProductExist.product_image = productimage.url;
       if (length) isProductExist.length = length;
       if (breadth) isProductExist.breadth = breadth;
       if (width) isProductExist.width = width;
@@ -484,12 +491,16 @@ class ProductController {
       if (variants && Array.isArray(variants)) {
         for (const variant of variants) {
           //find the existing variant
-          console.log(variant.attributes.size);
+          console.log(`variant data : ${variant.attributes.color}`);
+
+          const variantdata = await Variant.find();
+          console.log(`variantdata : ${variantdata}`);
           const existingVariant = await Variant.findOne({
-            product_id: isProductExist._id,
+            // product_id: new mongoose.Types.ObjectId(isProductExist._id),
+            "attributes.color": variant.attributes.color,
           });
 
-          // console.log(`existingvariant data : ${existingVariant}`);
+          console.log(`existingvariant data : ${existingVariant}`);
           if (existingVariant) {
             if (variant.attributes)
               existingVariant.attributes = variant.attributes;
@@ -498,8 +509,7 @@ class ProductController {
             if (variant.stock) existingVariant.stock += variant.stock;
 
             await existingVariant.save();
-            // console.log(`existingVariant stock `, typeof existingVariant.stock);
-            totalStock += existingVariant.stock;
+            totalStock += variant.stock;
 
             variantArray.push(existingVariant);
           } else {
@@ -516,7 +526,7 @@ class ProductController {
 
             await newVariant.save();
 
-            totalStock += Number(variant.stock);
+            totalStock += variant.stock;
             variantArray.push(newVariant);
           }
         }
@@ -524,7 +534,7 @@ class ProductController {
 
       //update the total stock of the product based on the variant
       if (totalStock > 0) {
-        isProductExist.total_stock += Number(totalStock);
+        isProductExist.total_stock += totalStock;
       } else {
         isProductExist.total_stock += Number(quantity);
       }

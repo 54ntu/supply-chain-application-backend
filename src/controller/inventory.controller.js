@@ -51,15 +51,15 @@ const getInvetorySummary = async (req, res) => {
     //   console.log(unitToreorder);
 
     //total inventory amount
-    const totalInventory = await Variant.aggregate([
+    const totalInventory = await Product.aggregate([
       {
         $group: {
           _id: null,
           totalAmount: {
             $sum: {
               $multiply: [
-                { $toDouble: "$variant_price" }, //this will convert string  value to number
-                { $toDouble: "$stock" },
+                { $toDouble: "$product_price" }, //this will convert string  value to number
+                { $toDouble: "$total_stock" },
               ],
             },
           },

@@ -1,7 +1,6 @@
 const { Product } = require("../models/product.models");
 const { Order } = require("../models/order.models");
-const { orderStatus } = require("../global");
-const { format } = require("path");
+const { orderStatus } = require("../global/index");
 const { ApiResponse } = require("../services/ApiResponse");
 class DashboardController {
   static async getStockSummary(req, res) {
@@ -92,20 +91,23 @@ class DashboardController {
         },
       ]);
       // console.log(totalRevenue);
+      // Check if the aggregation result is empty
+      const total_revenue =
+        totalRevenue.length > 0 ? totalRevenue[0].revenue : 0;
 
       return res.status(200).json({
         success: true,
         data: {
           totalShipments: totalShipments,
           totalDelivered: totalDelivered,
-          totalRevenue: totalRevenue[0].revenue || 0,
+          totalRevenue: total_revenue,
           totalOrder: totalOrder,
         },
       });
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: "error ",
+        message: error.message,
       });
     }
   }

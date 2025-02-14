@@ -128,6 +128,7 @@ class CustomerController {
     try {
       //get the salesperson id from req.user
       const salespersonid = req.user._id;
+      console.log(req.user.role);
       if (!salespersonid) {
         return res.status(400).json({
           success: false,
@@ -142,15 +143,15 @@ class CustomerController {
             salespersonId: new mongoose.Types.ObjectId(salespersonid),
           },
         },
-        {
-          $project: {
-            customerName: 1,
-            address: 1,
-            email: 1,
-            phone: 1,
-            customerpic: 1,
-          },
-        },
+        // {
+        //   $project: {
+        //     customerName: 1,
+        //     address: 1,
+        //     email: 1,
+        //     phone: 1,
+        //     customerpic: 1,
+        //   },
+        // },
       ]);
 
       if (customerDetails.length === 0) {
@@ -313,13 +314,6 @@ class CustomerController {
           },
         },
       ]);
-
-      if (orderDetails.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "order details data not found",
-        });
-      }
 
       return res.status(200).json({
         customerData: customerDetails[0],

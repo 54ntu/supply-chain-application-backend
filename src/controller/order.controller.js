@@ -238,6 +238,7 @@ class OrderController {
       console.log("get order for distributor hoii");
       //get the distributor id from req.user
       const distributorid = req.user._id;
+      console.log(distributorid);
       if (!distributorid) {
         return res.status(400).json({
           success: false,
@@ -257,7 +258,6 @@ class OrderController {
         {
           $unwind: "$salespersonDetails",
         },
-
         {
           $match: {
             "salespersonDetails.distributor": new mongoose.Types.ObjectId(
@@ -265,7 +265,6 @@ class OrderController {
             ),
           },
         },
-
         {
           $lookup: {
             from: "customers",
@@ -579,7 +578,7 @@ class OrderController {
         }
       );
 
-      console.log(`updatedOrder  : ${updatedOrder}`);
+      // console.log(`updatedOrder  : ${updatedOrder}`);
       // // Generate tracking number
       const trackingNumber = `TRK-${Date.now()}-${Math.floor(
         Math.random() * 10000
@@ -598,20 +597,21 @@ class OrderController {
       // console.log(updatedOrder);
       //check order status and if orderstatus is confirmed then create shipment
       if (updatedOrder.order_status == orderStatus.CONFIRMED) {
-        const shipment = await Shipment.create({
+        await Shipment.create({
           orderId: updatedOrder._id,
           distributorId: distributorid,
           shippingAddress: updatedOrder.shippingAddress,
           shippingMethod: updatedOrder.shippingMethod,
           trackingNumber: trackingNumber,
           shippingcost: updatedOrder.shipping_charge,
-          estimatedDelivery: estimatedDelivery,
+          estimatedDelivery: new Date(estimatedDelivery),
         });
       }
 
       return res.status(200).json({
         success: true,
-        updatedOrder,
+        updatedOrderData: updatedOrder,
+
         message:
           "order with the given id is updated and shipment is created successfully.!",
       });
@@ -646,8 +646,12 @@ class OrderController {
     const cancelledOrders = await getCount(orderStatus.CANCELLED);
 
     //calculate the percentage changes
-    const getPercentageChange = (current, last) =>
-      last ? (((current - last) / last) * 100).toFixed(2) : 100;
+    const getPercentageChange = (current, last) => {
+      if (current === 0 && last === 0) {
+        return 0;
+      }
+      return last ? (((current - last) / last) * 100).toFixed(2) : 100;
+    };
 
     return res.json({
       totalOrders: {

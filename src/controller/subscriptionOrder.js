@@ -31,7 +31,7 @@ class SubscriptionOrderController {
         paymentMethod,
       });
 
-      console.log(createSubscriptOrder);
+      // console.log(createSubscriptOrder);
 
       if (paymentMethod == paymentMethods.KHALTI) {
         const data = {

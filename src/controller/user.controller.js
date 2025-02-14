@@ -61,6 +61,12 @@ class UserController {
         .json({ error: "Phone number must be exactly 10 digits." });
     }
 
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "password must be 8 digits or more",
+      });
+    }
     const isdistributorExist = await User.findOne({ email: email });
     console.log(isdistributorExist);
     if (isdistributorExist) {
@@ -128,7 +134,7 @@ class UserController {
         new ApiResponse(
           201,
           isdistributorCreated.email,
-          "distributor created successfully😊😊😊😊😊"
+          "distributor created successfully😊😊😊😊😊 otp is sent to your email"
         )
       );
   }
