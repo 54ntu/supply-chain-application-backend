@@ -284,6 +284,11 @@ class ShipmentController {
 
       // console.log(shipment);
       shipment.status = status;
+
+      //if status is delivered then set the deliveredDate
+      if (status === orderStatus.DELIVERED) {
+        shipment.deliveredDate = new Date();
+      }
       await shipment.save();
 
       //update the order status too

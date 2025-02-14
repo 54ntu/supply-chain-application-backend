@@ -25,14 +25,14 @@ const getShipmentPerformance = async (req, res) => {
     // Fetch successful (on-time) deliveries
     const onTimeDeliveriesCurrentYear = await Shipment.countDocuments({
       status: orderStatus.DELIVERED,
-      deliveredDate: { $lte: new Date("$estimatedDelivery") },
       createdAt: { $gte: currentYearStart, $lte: currentYearEnd },
+      $expr: { $lte: ["$deliveredDate", "$estimatedDelivery"] },
     });
 
     const onTimeDeliveriesPreviousYear = await Shipment.countDocuments({
       status: orderStatus.DELIVERED,
-      deliveredDate: { $lte: "$estimatedDelivery" },
       createdAt: { $gte: previousYearStart, $lte: previousYearEnd },
+      $expr: { $lte: ["$deliveredDate", "$estimatedDelivery"] },
     });
 
     //calculate success rate
@@ -47,14 +47,14 @@ const getShipmentPerformance = async (req, res) => {
     //fetch delayed deliveries
     const lateDeliveriesCurrentYear = await Shipment.countDocuments({
       status: orderStatus.DELIVERED,
-      deliveredDate: { $gt: "$estimatedDelivery" },
       createdAt: { $gte: currentYearStart, $lte: currentYearEnd },
+      $expr: { $gt: ["$deliveredDate", "$estimatedDelivery"] },
     });
 
     const lateDeliveriesPreviousYear = await Shipment.countDocuments({
       status: orderStatus.DELIVERED,
-      deliveredDate: { $gt: "$estimatedDelivery " },
       createdAt: { $gte: previousYearStart, $lte: previousYearEnd },
+      $expr: { $gt: ["$deliveredDate", "$estimatedDelivery"] },
     });
 
     //calculate delay rate
@@ -67,7 +67,7 @@ const getShipmentPerformance = async (req, res) => {
       : 0;
 
     //return calculated data
-    return {
+    return res.json({
       totalShipments: {
         currentYear: totalShipmentsCurrentYear,
         previouseYear: totalShipmentsPreviousYear,
@@ -100,7 +100,7 @@ const getShipmentPerformance = async (req, res) => {
           percentageChange(successRateCurrentYear, successRatePriviousYear) +
           "%",
       },
-    };
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,

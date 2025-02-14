@@ -30,6 +30,7 @@ const { distributorOrderRouter } = require("./src/routes/getorder.route");
 const {
   salesCustomerRouter,
 } = require("./src/routes/customer-salesperson-side.route");
+const { ProductController } = require("./src/controller/product.controller");
 const app = express();
 
 const corsOptions = {
@@ -63,6 +64,11 @@ app.use("/api/v1/category", categoryRouter);
 
 //route for product controller
 app.use("/api/v1/product", productRouter);
+app.get(
+  "/api/v1/productSalesperson",
+  UserMiddleware.isUserLoggedIn,
+  ProductController.viewAllProductSalesPersonSide
+);
 
 //routes for customer controller
 app.use("/api/v1/customer", customerRouter);

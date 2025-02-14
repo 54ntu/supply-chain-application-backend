@@ -567,6 +567,35 @@ class ProductController {
       });
     }
   }
+
+  //view all products for salesperson side
+  static async viewAllProductSalesPersonSide(req, res) {
+    console.log("moh yeta hit garey hoi tw");
+    //get the salesperson id from the req.user
+    const salespersonid = req.user._id;
+    if (!salespersonid) {
+      return res.status(400).json({
+        success: false,
+        message: "salespersonid is required",
+      });
+    }
+
+    const productsDetails = await Product.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "distributorId",
+          foreignField: "_id",
+          as: "distributordetails",
+        },
+      },
+      {
+        $unwind: "$distributordetails ",
+      },
+    ]);
+
+    console.log(productsDetails);
+  }
 }
 
 module.exports = {

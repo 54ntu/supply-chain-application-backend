@@ -36,4 +36,5 @@ productRouter
     ProductController.updateProduct
   );
 
+
 module.exports = productRouter;
