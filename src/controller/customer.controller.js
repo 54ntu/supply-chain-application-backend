@@ -156,8 +156,7 @@ class CustomerController {
       if (customerDetails.length === 0) {
         return res.status(404).json({
           success: false,
-          message:
-            "customer data for the logged in salesperson fetched successfully",
+          message: "customer data not found",
         });
       }
 
@@ -315,7 +314,18 @@ class CustomerController {
         },
       ]);
 
-      return res.json(orderDetails);
+      if (orderDetails.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "order details data not found",
+        });
+      }
+
+      return res.status(200).json({
+        customerData: customerDetails[0],
+        orderdata: orderDetails,
+        message: "data fetched successfully",
+      });
     } catch (error) {
       return res.status(500).json({
         success: false,

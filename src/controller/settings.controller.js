@@ -40,6 +40,24 @@ class SettingsController {
         });
       }
 
+      if (new_password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "password must be atleast 8 digits or more",
+        });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Invalid email format." });
+      }
+
+      //validate phone number length
+      if (phone.length !== 10) {
+        return res
+          .status(400)
+          .json({ error: "Phone number must be exactly 10 digits." });
+      }
+
       //helper function
       const updatePassword = async (user) => {
         if (!user) return null;
@@ -50,7 +68,6 @@ class SettingsController {
           user.password
         );
 
-        
         if (!isPasswordMatched) {
           return res.status(400).json({
             error: "password doesnot match",

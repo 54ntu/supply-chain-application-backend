@@ -377,6 +377,13 @@ class UserController {
         });
       }
 
+      if (password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "password must be atleast 8 digits",
+        });
+      }
+
       //check whether the email exist or not
       const isUserExist = await User.findOne({ email: email });
       if (!isUserExist) {

@@ -58,6 +58,14 @@ class SalesPersonController {
         .json({ error: "Phone number must be exactly 10 digits." });
     }
 
+
+      if (password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "password must be atleast 8 digits",
+        });
+      }
+
     //check whether the sales person already registered or not
     const isSalesPersonExist = await SalesPerson.findOne({ email: email });
     if (isSalesPersonExist) {
