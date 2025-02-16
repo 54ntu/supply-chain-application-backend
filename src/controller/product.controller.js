@@ -33,13 +33,13 @@ class ProductController {
       }
 
       const productImageLocalFilePath = req.file?.path;
-      // console.log(productImageLocalFilePath);
+      console.log(productImageLocalFilePath);
 
-      // if (!productImageLocalFilePath) {
-      //   return res.status(400).json({
-      //     message: "product image is not found..!!",
-      //   });
-      // }
+      if (!productImageLocalFilePath) {
+        return res.status(400).json({
+          message: "product image is not found..!!",
+        });
+      }
 
       //get the data from the req.body
       const {
@@ -73,60 +73,54 @@ class ProductController {
 
       //check if the product already exist or not(same category, name)
       let existingProduct = await Product.findOne({
-        category,
-        product_name: { $regex: new RegExp("^" + product_name + "$", "i") }, //case insensetive check
+        category: category.trim().toLowerCase(),
+        // product_name: { $regex: new RegExp("^" + product_name + "$", "i") }, //case insensetive check
+        product_name: product_name.trim().toLowerCase(),
       });
 
+      if (existingProduct) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "product with same category and product name already exist...please use updation option",
+        });
+      }
       let totalStock = 0;
       let variantArray = [];
 
-      let FKU;
-      if (!existingProduct) {
-        //generate FKU for the product
-        FKU = generateFKU(category, product_name);
+      //generate FKU for the product
+      const FKU = generateFKU(category, product_name);
 
-        //check whether the FKU is unique
-        const existingFKU = await Product.findOne({ FKU });
-        if (existingFKU) {
-          return res.status(400).json({
-            message:
-              "FKU already exists, add another product with different name and category",
-          });
-        }
+      //if product doesnot already exist then upload image into the cloudinary
+      const productImage = await uploadOnCloudinary(productImageLocalFilePath);
 
-        //if product doesnot already exist then upload image into the cloudinary
-        const productImage = await uploadOnCloudinary(
-          productImageLocalFilePath
-        );
-
-        // if (!productImage) {
-        //   return res.status(500).json({
-        //     success: false,
-        //     message: "product image url is required",
-        //   });
-        // }
-
-        //create a new product
-        existingProduct = new Product({
-          distributorId: distributorid,
-          category,
-          product_name,
-          product_description,
-          product_weight,
-          product_price,
-          FKU,
-          length,
-          breadth,
-          width,
-          restock_threshold,
-          total_stock: 0, // total_stock will be updated after adding variants
-          min_price: 0, //will be calculated automatically once the variants added
-          max_price: 0, //will be calculated automatically once the variants added
+      if (!productImage) {
+        return res.status(500).json({
+          success: false,
+          message: "product image url is required",
         });
-
-        if (productImage.url) existingProduct.product_image = productImage.url;
-        await existingProduct.save();
       }
+
+      //create a new product
+      existingProduct = new Product({
+        distributorId: distributorid,
+        category,
+        product_name,
+        product_description,
+        product_weight,
+        product_price,
+        FKU,
+        length,
+        breadth,
+        width,
+        restock_threshold,
+        total_stock: 0, // total_stock will be updated after adding variants
+        min_price: 0, //will be calculated automatically once the variants added
+        max_price: 0, //will be calculated automatically once the variants added
+      });
+
+      if (productImage.url) existingProduct.product_image = productImage.url;
+      await existingProduct.save();
 
       //add or update variants
       if (variants && Array.isArray(variants)) {
