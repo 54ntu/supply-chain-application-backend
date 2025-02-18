@@ -6,6 +6,8 @@ const { ApiResponse } = require("../services/ApiResponse");
 const { isValidObjectId, default: mongoose } = require("mongoose");
 const { uploadOnCloudinary } = require("../services/cloudinary");
 const { envConfig } = require("../config/config");
+const { Order } = require("../models/order.models");
+const { orderStatus } = require("../global");
 class ProductController {
   static async addProduct(req, res) {
     //get the distributor id from the req.user.id
@@ -381,7 +383,36 @@ class ProductController {
         });
       }
 
-      //if valid user and product is found then delete that
+      //check whether the product is linked to active order i.e. order status is still not delivered
+      const isProductExistInActiveOrder = await Order.aggregate([
+        {
+          $lookup: {
+            from: "orderitems",
+            localField: "_id",
+            foreignField: "orderId",
+            as: "orderItemsdetails",
+          },
+        },
+        {
+          $unwind: "$orderItemsdetails",
+        },
+        {
+          $match: {
+            "orderItemsdetails.productId": new mongoose.Types.ObjectId(id),
+            order_status: { $ne: orderStatus.DELIVERED },
+          },
+        },
+      ]);
+
+      // console.log(`order data is :${isProductExistInActiveOrder}  `);
+
+      if (isProductExistInActiveOrder.length !== 0) {
+        return res.status(400).json({
+          success: false,
+          message: `product is linked to active order so the product of id ${id} can't be deleted at the moment`,
+        });
+      }
+      // //if valid user and product doesnot linked to active order then delete that
       const deletedproduct = await isProductExist.deleteOne({ _id: id });
       if (deletedproduct.acknowledged == false) {
         return res.status(500).json({
@@ -390,6 +421,7 @@ class ProductController {
       }
 
       return res.status(200).json({
+        isProductExistInActiveOrder,
         message: "product deleted successfully..!!",
       });
     } catch (error) {
@@ -457,6 +489,12 @@ class ProductController {
         });
       }
 
+      if (quantity < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "negative quantity value is not allowed",
+        });
+      }
       //upload updated product image into the cloudinary
       const productimage = await uploadOnCloudinary(productImageLocalPath);
 
@@ -500,7 +538,7 @@ class ProductController {
               existingVariant.attributes = variant.attributes;
             if (variant.variant_price)
               existingVariant.variant_price = variant.variant_price;
-            if (variant.stock) existingVariant.stock += variant.stock;
+            if (variant.stock > 0) existingVariant.stock += variant.stock;
 
             await existingVariant.save();
             totalStock += variant.stock;

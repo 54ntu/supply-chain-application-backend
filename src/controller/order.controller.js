@@ -549,16 +549,16 @@ class OrderController {
         {
           $unwind: "$salespersonDetails",
         },
-        {
-          $match: {
-            "salespersonDetails.distributor": new mongoose.Types.ObjectId(
-              distributorid
-            ),
-          },
-        },
+        // {
+        //   $match: {
+        //     "salespersonDetails.distributor": new mongoose.Types.ObjectId(
+        //       distributorid
+        //     ),
+        //   },
+        // },
       ]);
 
-      // console.log(`order : ${order}`);
+      console.log(`order : ${order}`);
 
       //verify order
       if (!order || order.length === 0) {
