@@ -33,7 +33,7 @@ const subscriptionSchema = new mongoose.Schema({
 
   paymentMethod: {
     type: String,
-    enum: [paymentMethods.KHALTI, paymentMethods.CARD],
+    enum: [paymentMethods.KHALTI, paymentMethods.CARD, paymentMethods.STRIPE],
     required: true,
   },
 
@@ -49,6 +49,12 @@ const subscriptionSchema = new mongoose.Schema({
   isSubscribed: {
     type: Boolean,
     default: false,
+  },
+  sessionId: {
+    type: String,
+  },
+  currency: {
+    type: String,
   },
 
   pidx: {

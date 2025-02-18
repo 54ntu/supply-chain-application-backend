@@ -2,6 +2,9 @@ const { Subscription } = require("../models/subscription.models");
 const { paymentMethods, subscriptionType } = require("../global");
 const { ApiResponse } = require("../services/ApiResponse");
 const { default: axios } = require("axios");
+const { envConfig } = require("../config/config");
+const Stripe = require("stripe");
+const stripe = new Stripe(envConfig.stripe_secret);
 class SubscriptionOrderController {
   static async createSubscriptionOrder(req, res) {
     console.log("hitt vayo hoiii");
@@ -68,11 +71,45 @@ class SubscriptionOrderController {
           },
           message: "subscription created successfully",
         });
+      } else if (paymentMethod == paymentMethods.STRIPE) {
+        const lineItems = [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: subscriptionType,
+              },
+              unit_amount: total_amount * 100,
+            },
+            quantity: 1,
+          },
+        ];
+
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: lineItems,
+          mode: "payment",
+          customer_email: req.user.email,
+          metadata: {
+            subscriptionId: createSubscriptOrder._id.toString(),
+          },
+          success_url: "http://localhost:5173/success",
+          cancel_url: "http://localhost:5173/cancel",
+        });
+
+        createSubscriptOrder.sessionId = session.id;
+        await createSubscriptOrder.save();
+
+        return res.status(200).json({
+          success: true,
+          sessionId: session.id,
+          url: session.url,
+        });
       }
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: "something went wrong",
+        message: error.message,
       });
     }
   }
@@ -82,32 +119,63 @@ class SubscriptionOrderController {
     const { pidx } = req.body;
     // console.log(typeof pidx);
 
+    //get the session_id from req.query
+    const { session_id } = req.query;
+
     try {
-      //send the post request to the khalti payment verification url
-      const response = await axios.post(
-        "https://dev.khalti.com/api/v2/epayment/lookup/",
-        { pidx: pidx },
-        {
-          headers: {
-            Authorization: "key f1b854113d2c424f820427cadb100265",
-          },
-        }
-      );
-      // console.log(response);
-      const khaltiresponse = response.data;
+      let khaltiresponse = {};
+      let session = {};
       let durationMonths = 0;
 
+      if (pidx) {
+        //send the post request to the khalti payment verification url
+        try {
+          const response = await axios.post(
+            "https://dev.khalti.com/api/v2/epayment/lookup/",
+            { pidx: pidx },
+            {
+              headers: {
+                Authorization: "key f1b854113d2c424f820427cadb100265",
+              },
+            }
+          );
+          // console.log(response);
+          khaltiresponse = response.data;
+        } catch (error) {
+          return res.status(500).json({
+            success: false,
+            message: "error verifying payment with khalti",
+            error: error.message,
+          });
+        }
+      } else if (session_id) {
+        try {
+          //handle stripe verify-payment
+          session = await stripe.checkout.sessions.retrieve(session_id);
+          // console.log(`session : ${session}`);
+        } catch (error) {
+          return res.status(500).json({
+            success: false,
+            message: "error verifying payment with stripe",
+            error: error.message,
+          });
+        }
+      }
+
       //update the isSubscribed field in subscription to true and also update the endate of the subscription if the khaltriresponse payment status is completed
-      if (khaltiresponse.status == "Completed") {
+      if (
+        khaltiresponse?.status == "Completed" ||
+        session?.payment_status === "paid"
+      ) {
         const findsubscriptionByPidx = await Subscription.findOne({
-          pidx: pidx,
+          $or: [{ pidx: pidx }, { sessionId: session_id }],
         });
         // console.log(findsubscriptionByPidx);
 
         if (!findsubscriptionByPidx) {
           return res.status(500).json({
             success: false,
-            message: `subscription order of pidx ${pidx} not found`,
+            message: `subscription order of pidx ${pidx}  or sessionId ${session_id} not found`,
           });
         }
 
@@ -146,7 +214,7 @@ class SubscriptionOrderController {
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: "something went wrong",
+        message: error.message,
       });
     }
   }

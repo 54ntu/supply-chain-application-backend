@@ -56,6 +56,7 @@ const subscriptionType = {
 const paymentMethods = {
   KHALTI: "KHALTI",
   CARD: "CARD",
+  STRIPE: "STRIPE",
 };
 
 const billingCycle = {

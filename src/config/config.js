@@ -20,6 +20,9 @@ const envConfig = {
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.API_KEY,
   api_secret: process.env.API_SECRET,
+
+  //stripe secret key
+  stripe_secret: process.env.STRIPE_SECRET_KEY, 
 };
 
 module.exports = {
