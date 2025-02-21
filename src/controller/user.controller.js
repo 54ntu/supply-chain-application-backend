@@ -216,12 +216,26 @@ class UserController {
     const isPasswordMatched = await comparedPassword(password, user.password);
 
     if (!isPasswordMatched) {
+      user.failedLoginAttempts += 1;
+      if (user.failedLoginAttempts >= 3) {
+        //lock accounts after 3 failed attempts
+        user.isLocked = true;
+        user.lockUntil = Date.now() + 30 * 60 * 1000; //lock for 30 minutes
+      }
+      await user.save();
       return res.status(400).json({
-        message: "password doesnot matched..!!",
+        success: false,
+        message: "invalid email or password",
       });
     }
 
-    //if the user exist and password matched then
+    //if matched reset failed login attempts and update the last login
+    user.failedLoginAttempts = 0;
+    user.isLocked = false;
+    user.lockUntil = null;
+    user.lastLogin = new Date(); //update the last login timestamp
+    await user.save();
+
     //generate access token
     const accessToken = await jwt.sign(
       {
