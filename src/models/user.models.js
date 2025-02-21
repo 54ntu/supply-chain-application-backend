@@ -45,6 +45,22 @@ const userSchema = new mongoose.Schema(
     verificationDoc: {
       type: String,
     },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    isLocked: {
+      type: Boolean,
+      default: false,
+    },
+    lockUntil: {
+      type: Date,
+      default: null,
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
