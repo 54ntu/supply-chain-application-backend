@@ -10,6 +10,9 @@ const { default: mongoose } = require("mongoose");
 const { orderStatus, shipmentMethods } = require("../global");
 const { Shipment } = require("../models/shipment.models");
 const { getWeekRange } = require("../services/getWeekRange");
+const { User } = require("../models/user.models");
+const { SalesPerson } = require("../models/salesPerson.models");
+const { Customer } = require("../models/customer.models");
 class OrderController {
   static async createOrder(req, res) {
     //get the salesperson id from req.user as salesperson neeed to be logged in to create order
@@ -680,6 +683,71 @@ class OrderController {
         ),
       },
     });
+  }
+
+  static async searchOrders(req, res) {
+    try {
+      //search order on basis of status, or order id
+      const { q, status } = req.query;
+      const userId = req.user._id;
+      const userRole = req.user.role;
+      let filter = {};
+      if (userRole === "distributor") {
+        //fetch all the salesperson manage by the distributor
+        const salespersons = await SalesPerson.find({
+          distributor: userId,
+        }).select("_id");
+
+        // console.log(salespersons);
+        if (!salespersons || salespersons.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "salesperson managed by the distributor not found",
+          });
+        }
+
+        //get array of salespersons ids
+        const salespersonId = salespersons.map((sp) => sp._id);
+
+        //filter orders based on those salespersons id
+        filter.salesPerson = { $in: salespersonId };
+      } else if (userRole === "salesperson") {
+        filter.salesPerson = userId;
+      }
+
+      console.log(q);
+      //search by order id , customer name
+      if (q) {
+        filter.$or = [
+          { _id: q }, //search by order id
+        ];
+      }
+
+      //filter by order status
+      if (status) {
+        filter.order_status = status.toUpperCase();
+      }
+
+      console.log(filter);
+      const orders = await Order.find(filter);
+
+      // console.log(orders);
+      if (!orders || orders.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "orders data not found",
+        });
+      }
+
+      return res
+        .status(200)
+        .json(new ApiResponse(200, orders, "orders data fetched successfully"));
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
   }
 }
 
