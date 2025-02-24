@@ -31,6 +31,7 @@ const {
   salesCustomerRouter,
 } = require("./src/routes/customer-salesperson-side.route");
 const { ProductController } = require("./src/controller/product.controller");
+const { searchRouter } = require("./src/routes/search.routes");
 const app = express();
 
 const corsOptions = {
@@ -126,6 +127,9 @@ app.use("/api/v1/subscriptionplan", subscriptionplanRouter);
 
 //subscription order router
 app.use("/api/v1/orderSubs", subscriptionOrderRouter);
+
+//search operation routes
+app.use("/api/v1/search", searchRouter);
 
 module.exports = {
   app,

@@ -8,6 +8,7 @@ const { uploadOnCloudinary } = require("../services/cloudinary");
 const { envConfig } = require("../config/config");
 const { Order } = require("../models/order.models");
 const { orderStatus } = require("../global");
+const { SalesPerson } = require("../models/salesPerson.models");
 class ProductController {
   static async addProduct(req, res) {
     //get the distributor id from the req.user.id
@@ -627,6 +628,48 @@ class ProductController {
     ]);
 
     console.log(productsDetails);
+  }
+
+  //search product based on the query provided
+  static async searchProduct(req, res) {
+    const userid = req.user._id;
+    const userRole = req.user.role;
+    const { q } = req.query;
+    // console.log(q);
+
+    let filter = {
+      $or: [
+        { product_name: { $regex: q, $options: "i" } },
+        { product_description: { $regex: q, $options: "i" } },
+      ],
+    };
+
+    //apply user based filtering
+    if (userRole === "distributor") {
+      //distributor can only view their own products
+      filter.distributorId = userid;
+    } else if (userRole === "salesperson") {
+      const salespersonExist = await SalesPerson.findById(userid);
+      if (!salespersonExist) {
+        return res.status(404).json({
+          success: false,
+          message: "salesperson doesnot exist",
+        });
+      }
+      filter.distributorId = salespersonExist.distributor;
+    }
+
+    const data = await Product.find(filter);
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "product data not found",
+      });
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, data, "product data fetched successfully"));
   }
 }
 

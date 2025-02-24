@@ -36,5 +36,8 @@ productRouter
     ProductController.updateProduct
   );
 
+// productRouter
+//   .route("/searchproductall")
+//   .get(UserMiddleware.isUserLoggedIn, ProductController.searchProduct);
 
 module.exports = productRouter;
