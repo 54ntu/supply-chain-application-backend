@@ -8,7 +8,6 @@ customerRouter
   .route("/")
   .post(
     UserMiddleware.isUserLoggedIn,
-    UserMiddleware.isDistributor,
     upload.single("customerImage"),
     CustomerController.addCustomer
   )

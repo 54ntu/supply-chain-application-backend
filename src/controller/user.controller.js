@@ -215,12 +215,13 @@ class UserController {
     //if user exist then compare the password
     const isPasswordMatched = await comparedPassword(password, user.password);
 
+    const lockedDuration = 30 * 60 * 1000; //30 minutes
     if (!isPasswordMatched) {
       user.failedLoginAttempts += 1;
       if (user.failedLoginAttempts >= 3) {
         //lock accounts after 3 failed attempts
         user.isLocked = true;
-        user.lockUntil = Date.now() + 30 * 60 * 1000; //lock for 30 minutes
+        user.lockUntil = new Date(Date.now() + lockedDuration);
       }
       await user.save();
       return res.status(400).json({

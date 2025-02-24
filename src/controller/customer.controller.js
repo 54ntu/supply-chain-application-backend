@@ -8,19 +8,13 @@ const { Order } = require("../models/order.models");
 
 class CustomerController {
   static async addCustomer(req, res) {
-    //get the distributor id from the req.user
-    //get the salesperson id and other data from the req.body
-    //get the customer image from req.file
-    //validate data
-    //check whether the customer email id is present already or not
-    //if exist then send response
-    //if not then create new customer
-    //if created then return the response
     try {
-      const distributorid = req.user._id;
-      if (!distributorid) {
+      const userid = req.user._id;
+      const userRole = req.user.role;
+      console.log(userRole);
+      if (!userid) {
         return res.status(400).json({
-          message: "distributor id is not provided",
+          message: "uesrid is not provided",
         });
       }
 
@@ -48,8 +42,7 @@ class CustomerController {
         !phone ||
         !storeName ||
         !address ||
-        !preferredShippingMethod ||
-        !salespersonId
+        !preferredShippingMethod
       ) {
         return res.status(400).json({
           message: "all fields are required.!",
@@ -70,13 +63,17 @@ class CustomerController {
       }
 
       //check if salesperson exist or not
+      let salespersonExist;
 
-      const salespersonExist = await SalesPerson.findById(salespersonId);
-
-      if (!salespersonExist) {
-        return res.status(404).json({
-          message: "salesperson id is not valid",
-        });
+      if (userRole === "distributor") {
+        salespersonExist = await SalesPerson.findById(salespersonId);
+        if (!salespersonExist) {
+          return res.status(404).json({
+            message: "salesperson id is not valid",
+          });
+        }
+      } else if (userRole === "salesperson") {
+        salespersonExist = await SalesPerson.findById(userid);
       }
 
       //check whether the customer with the given email exist or not
@@ -91,21 +88,40 @@ class CustomerController {
       const customerImage = await uploadOnCloudinary(customerLocalFilePath);
       // console.log(customerImage);
 
-      const customerdata = await Customer.create({
-        customerName,
-        customerId,
-        email,
-        customerpic: customerImage.url,
-        phone,
-        preferredShippingMethod,
-        storeName,
-        isActive: true,
-        address,
-        salespersonId,
-        distributorId: distributorid,
-      });
+      //create customer
+      let customerData;
 
-      if (!customerdata) {
+      if (userRole === "distributor") {
+        customerData = await Customer.create({
+          customerName,
+          customerId,
+          email,
+          customerpic: customerImage.url,
+          phone,
+          preferredShippingMethod,
+          storeName,
+          isActive: true,
+          address,
+          salespersonId: salespersonId,
+          distributorId: userid,
+        });
+      } else if (userRole === "salesperson") {
+        customerData = await Customer.create({
+          customerName,
+          customerId,
+          email,
+          customerpic: customerImage.url,
+          phone,
+          preferredShippingMethod,
+          storeName,
+          isActive: true,
+          address,
+          salespersonId: userid,
+          distributorId: salespersonExist.distributor,
+        });
+      }
+
+      if (!customerData) {
         return res.status(500).json({
           message: "customer creation failed.!",
         });
@@ -113,7 +129,7 @@ class CustomerController {
       return res
         .status(201)
         .json(
-          new ApiResponse(201, customerdata, "customer created successfully.!")
+          new ApiResponse(201, customerData, "customer created successfully.!")
         );
     } catch (error) {
       return res.status(500).json({
@@ -337,6 +353,7 @@ class CustomerController {
 
     try {
       const distributorid = req.user._id;
+      console.log(`distributorid : ${distributorid}`);
       if (!distributorid) {
         return res.status(400).json({
           error: "distributor id is required.😒😒😒😒😒",
