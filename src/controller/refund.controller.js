@@ -399,6 +399,7 @@ class RefundController {
   static async searchReturnRefunds(req, res) {
     try {
       const { q, status } = req.query; //status baat check garna sakxam and order id baat poni check garna sakxam hoi tw
+      const refundId = new mongoose.Types.ObjectId(q);
       const distributorId = req.user._id;
       if (!distributorId) {
         return res.status(400).json({
@@ -406,8 +407,6 @@ class RefundController {
           message: "distributor id is required",
         });
       }
-
-      let filter = {};
 
       //find the salesperson managed by the logged in distributor
       const salespersons = await SalesPerson.find({
@@ -423,25 +422,63 @@ class RefundController {
       }
 
       //get the array of salesperson ids
-      const salespersonId = salespersons.map((sp) => sp._id);
+      const salespersonIds = salespersons.map((sp) => sp._id);
       // console.log(salespersonId);
 
-      filter.salespersonId = { $in: salespersonId };
+      const returnsRefundDatas = await Refund.aggregate([
+        {
+          $match: {
+            salespersonId: { $in: salespersonIds },
+            ...(refundId ? { _id: refundId } : {}),
+            ...(status ? { status: status.toUpperCase() } : {}),
+          },
+        },
+        {
+          $lookup: {
+            from: "salespeople",
+            localField: "salespersonId",
+            foreignField: "_id",
+            as: "salespersonDetails",
+          },
+        },
 
-      if (q) {
-        filter.$or = [{ _id: q }];
-      }
+        {
+          $unwind: "$salespersonDetails",
+        },
+        {
+          $lookup: {
+            from: "orders",
+            localField: "orderId",
+            foreignField: "_id",
+            as: "orderDetails",
+          },
+        },
+        {
+          $unwind: "$orderDetails",
+        },
 
-      if (status) {
-        filter.status = status.toUpperCase();
-      }
-
-      // console.log(filter);
-      const returnsRefundDatas = await Refund.find(filter);
+        {
+          $project: {
+            orderId: 1,
+            Date: "$createdAt",
+            customerId: "$orderDetails.customer",
+            salesRepresentative: {
+              $concat: [
+                { $ifNull: ["$salespersonDetails.firstname", ""] },
+                " ",
+                { $ifNull: ["$salespersonDetails.lastname", ""] },
+              ],
+            },
+            reason: 1,
+            status: 1,
+          },
+        },
+      ]);
       // console.log(returnsRefundDatas);
       if (!returnsRefundDatas || returnsRefundDatas.length === 0) {
         return res.status(404).json({
           success: false,
+          returnsRefundDatas,
           message: "return refund data not found",
         });
       }

@@ -610,6 +610,11 @@ class CustomerController {
       activeCustomerPercentage,
     });
   }
+
+
+  static async searchCustomers(req,res){
+    
+  }
 }
 
 module.exports = {
