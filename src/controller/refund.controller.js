@@ -395,6 +395,69 @@ class RefundController {
       .status(200)
       .json(new ApiResponse(200, updatedStatus, "status updated successfully"));
   }
+
+  static async searchReturnRefunds(req, res) {
+    try {
+      const { q, status } = req.query; //status baat check garna sakxam and order id baat poni check garna sakxam hoi tw
+      const distributorId = req.user._id;
+      if (!distributorId) {
+        return res.status(400).json({
+          success: false,
+          message: "distributor id is required",
+        });
+      }
+
+      let filter = {};
+
+      //find the salesperson managed by the logged in distributor
+      const salespersons = await SalesPerson.find({
+        distributor: distributorId,
+      }).select("_id");
+      // console.log(salespersons);
+
+      if (!salespersons || salespersons.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "salespersons for the given distributor not found",
+        });
+      }
+
+      //get the array of salesperson ids
+      const salespersonId = salespersons.map((sp) => sp._id);
+      // console.log(salespersonId);
+
+      filter.salespersonId = { $in: salespersonId };
+
+      if (q) {
+        filter.$or = [{ _id: q }];
+      }
+
+      if (status) {
+        filter.status = status.toUpperCase();
+      }
+
+      // console.log(filter);
+      const returnsRefundDatas = await Refund.find(filter);
+      // console.log(returnsRefundDatas);
+      if (!returnsRefundDatas || returnsRefundDatas.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "return refund data not found",
+        });
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, returnsRefundDatas, "data fetched successfully")
+        );
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
 }
 
 module.exports = {
