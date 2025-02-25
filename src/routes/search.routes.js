@@ -4,6 +4,9 @@ const { ProductController } = require("../controller/product.controller");
 const { OrderController } = require("../controller/order.controller");
 const { RefundController } = require("../controller/refund.controller");
 const { CustomerController } = require("../controller/customer.controller");
+const {
+  SalesPersonController,
+} = require("../controller/salesperson.controller");
 const searchRouter = express.Router();
 
 searchRouter
@@ -28,6 +31,14 @@ searchRouter
     UserMiddleware.isUserLoggedIn,
     UserMiddleware.isDistributor,
     CustomerController.searchCustomers
+  );
+
+searchRouter
+  .route("/searchSalesperson")
+  .get(
+    UserMiddleware.isUserLoggedIn,
+    UserMiddleware.isDistributor,
+    SalesPersonController.searchSalesperson
   );
 
 module.exports = {

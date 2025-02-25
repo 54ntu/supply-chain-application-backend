@@ -58,13 +58,12 @@ class SalesPersonController {
         .json({ error: "Phone number must be exactly 10 digits." });
     }
 
-
-      if (password.length < 8) {
-        return res.status(400).json({
-          success: false,
-          message: "password must be atleast 8 digits",
-        });
-      }
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "password must be atleast 8 digits",
+      });
+    }
 
     //check whether the sales person already registered or not
     const isSalesPersonExist = await SalesPerson.findOne({ email: email });
@@ -689,6 +688,52 @@ class SalesPersonController {
           change: storeCoverageChange,
         },
       });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async searchSalesperson(req, res) {
+    try {
+      const { name, email } = req.query;
+      const distributorId = req.user._id;
+      if (!distributorId) {
+        return res.status(400).json({
+          success: false,
+          message: "distributor id is not provided",
+        });
+      }
+
+      let filter = { distributor: distributorId };
+
+      if (name) {
+        filter.firstname = { $regex: name, $options: "i" };
+      }
+
+      if (email) {
+        filter.email = { $regex: email, $options: "i" };
+      }
+
+      const salesPersonData = await SalesPerson.find(filter);
+      if (!salesPersonData || salesPersonData.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "salesperson data not found",
+        });
+      }
+
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            salesPersonData,
+            "salespersondata fetched successfully"
+          )
+        );
     } catch (error) {
       return res.status(500).json({
         success: false,
