@@ -611,9 +611,52 @@ class CustomerController {
     });
   }
 
+  static async searchCustomers(req, res) {
+    try {
+      const { storeName, email, address } = req.query;
+      const distributorId = req.user._id;
+      if (!distributorId) {
+        return res.status(400).json({
+          success: false,
+          message: "distributor id is required",
+        });
+      }
 
-  static async searchCustomers(req,res){
-    
+      let filter = { distributorId: distributorId };
+      if (storeName) {
+        filter.storeName = { $regex: storeName, $options: "i" };
+      }
+
+      if (email) {
+        filter.email = { $regex: email, $options: "i" };
+      }
+
+      if (address) {
+        filter.address = { $regex: address, $options: "i" };
+      }
+
+      const data = await Customer.find(filter);
+
+      // console.log(data);
+
+      if (!data || data.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "matching customer data not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data,
+        message: "matching customer data fetched successfully",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
   }
 }
 
